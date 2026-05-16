@@ -1,0 +1,8 @@
+{
+  "name": "NovaPulse",
+  "description": "Enterprise-grade goal setting and performance tracking portal for modern organizations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
