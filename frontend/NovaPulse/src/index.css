@@ -153,4 +153,57 @@
   .bg-immersive-gradient {
     background: var(--immersive-gradient);
   }
+
+  /* Auth page glassmorphic card */
+  .auth-glass-card {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(40px) saturate(1.4);
+    -webkit-backdrop-filter: blur(40px) saturate(1.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+      0 25px 50px -12px rgba(0, 0, 0, 0.5),
+      0 0 80px rgba(99, 102, 241, 0.06);
+  }
+
+  /* Animated background orbs */
+  .auth-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    animation: auth-float 20s ease-in-out infinite;
+  }
+  .auth-orb-1 {
+    width: 500px;
+    height: 500px;
+    top: -10%;
+    left: -10%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.25), transparent 70%);
+    animation-delay: 0s;
+  }
+  .auth-orb-2 {
+    width: 400px;
+    height: 400px;
+    bottom: -5%;
+    right: -5%;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.2), transparent 70%);
+    animation-delay: -7s;
+    animation-duration: 25s;
+  }
+  .auth-orb-3 {
+    width: 300px;
+    height: 300px;
+    top: 40%;
+    right: 20%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.15), transparent 70%);
+    animation-delay: -14s;
+    animation-duration: 30s;
+  }
+}
+
+@keyframes auth-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -40px) scale(1.05); }
+  50% { transform: translate(-20px, 20px) scale(0.95); }
+  75% { transform: translate(40px, 30px) scale(1.02); }
 }

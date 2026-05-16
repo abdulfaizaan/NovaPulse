@@ -22,20 +22,38 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { LandingPage } from "./components/landing/LandingPage";
+import { AuthPage } from "./components/auth/AuthPage";
+
+type AppView = 'landing' | 'auth' | 'app';
 
 export default function App() {
+  // Auth gating — check sessionStorage for persisted login
+  const [view, setView] = React.useState<AppView>(() => {
+    return sessionStorage.getItem("novapulse_auth") === "true" ? "app" : "landing";
+  });
+
   const [role, setRole] = React.useState<UserRole>('employee');
   const [activeTab, setActiveTab] = React.useState('dashboard');
   const [isGoalModalOpen, setIsGoalModalOpen] = React.useState(false);
   const [showTour, setShowTour] = React.useState(false);
 
-  // Auto-show tour for first time users
+  // Auto-show tour for first time users (only in app view)
   React.useEffect(() => {
+    if (view !== "app") return;
     const hasSeenTour = localStorage.getItem("novapulse_tour_seen");
     if (!hasSeenTour) {
       setTimeout(() => setShowTour(true), 1500);
     }
-  }, []);
+  }, [view]);
+
+  const handleAuth = () => {
+    sessionStorage.setItem("novapulse_auth", "true");
+    setView("app");
+    toast.success("Welcome to NovaPulse!", {
+      description: "You're now signed in. Let's get started.",
+    });
+  };
 
   const handleRoleSwitch = (newRole: UserRole) => {
     setRole(newRole);
@@ -83,6 +101,27 @@ export default function App() {
 
   const ThemeProviderAny = ThemeProvider as any;
 
+  /* ── Landing page (unauthenticated) ── */
+  if (view === "landing") {
+    return (
+      <>
+        <LandingPage onGetStarted={() => setView("auth")} />
+        <Toaster position="bottom-right" />
+      </>
+    );
+  }
+
+  /* ── Auth page ── */
+  if (view === "auth") {
+    return (
+      <>
+        <AuthPage onAuth={handleAuth} />
+        <Toaster position="bottom-right" />
+      </>
+    );
+  }
+
+  /* ── Main application (authenticated) ── */
   return (
     <ThemeProviderAny attribute="class" defaultTheme="dark" enableSystem>
       <TooltipProvider>

@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: novapulse-db
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: novapulse
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d novapulse"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: novapulse-redis
+    ports:
+      - '6379:6379'
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: novapulse-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgresql://myuser:mypassword@postgres:5432/novapulse?schema=public
+      JWT_SECRET: supersecret_for_demo
+      PORT: 3000
+
+volumes:
+  postgres_data:
