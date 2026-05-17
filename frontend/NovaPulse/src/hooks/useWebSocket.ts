@@ -12,13 +12,18 @@ export function useWebSocket(userId: string | null, onEvent?: (event: WebSocketE
   const reconnectAttempts = useRef(0);
   const MAX_RECONNECT_ATTEMPTS = 5;
 
+  const onEventRef = useRef(onEvent);
+  useEffect(() => {
+    onEventRef.current = onEvent;
+  }, [onEvent]);
+
   useEffect(() => {
     if (!userId) return;
 
-    const wsUrl = API_URL.replace('http://', 'ws://').replace('https://', 'wss://');
+    const baseUrl = API_URL.replace('/api', '').replace('http://', 'ws://').replace('https://', 'wss://');
+    const wsUrl = `${baseUrl}/ws`;
 
     socketRef.current = io(wsUrl, {
-      path: '/ws',
       query: { userId },
       reconnection: true,
       reconnectionDelay: 1000,
@@ -37,33 +42,33 @@ export function useWebSocket(userId: string | null, onEvent?: (event: WebSocketE
     });
 
     socketRef.current.on('goal:created', (event) => {
-      onEvent?.({ type: 'goal:created', data: event });
+      onEventRef.current?.({ type: 'goal:created', data: event });
     });
 
     socketRef.current.on('goal:submitted', (event) => {
-      onEvent?.({ type: 'goal:submitted', data: event });
+      onEventRef.current?.({ type: 'goal:submitted', data: event });
     });
 
     socketRef.current.on('goal:approved', (event) => {
-      onEvent?.({ type: 'goal:approved', data: event });
+      onEventRef.current?.({ type: 'goal:approved', data: event });
     });
 
     socketRef.current.on('goal:rejected', (event) => {
-      onEvent?.({ type: 'goal:rejected', data: event });
+      onEventRef.current?.({ type: 'goal:rejected', data: event });
     });
 
     socketRef.current.on('escalation:triggered', (event) => {
-      onEvent?.({ type: 'escalation:triggered', data: event });
+      onEventRef.current?.({ type: 'escalation:triggered', data: event });
     });
 
     socketRef.current.on('system:event', (event) => {
-      onEvent?.({ type: 'system:event', data: event });
+      onEventRef.current?.({ type: 'system:event', data: event });
     });
 
     return () => {
       socketRef.current?.disconnect();
     };
-  }, [userId, onEvent]);
+  }, [userId]);
 
   const sendMessage = useCallback((event: string, data: any) => {
     if (socketRef.current?.connected) {

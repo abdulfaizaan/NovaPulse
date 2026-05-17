@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateGoalDto = exports.CreateGoalDto = void 0;
+exports.CreateSharedGoalDto = exports.UpdateGoalDto = exports.CreateGoalDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const enums_1 = require("../../../common/enums");
@@ -107,4 +107,48 @@ __decorate([
     (0, class_validator_1.IsEnum)(enums_1.GoalStatus),
     __metadata("design:type", String)
 ], UpdateGoalDto.prototype, "status", void 0);
+class CreateSharedGoalDto {
+    title;
+    description;
+    thrustArea;
+    unitOfMeasure;
+    targetValue;
+    dueDate;
+    assignments;
+}
+exports.CreateSharedGoalDto = CreateSharedGoalDto;
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateSharedGoalDto.prototype, "title", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateSharedGoalDto.prototype, "description", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateSharedGoalDto.prototype, "thrustArea", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateSharedGoalDto.prototype, "unitOfMeasure", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateSharedGoalDto.prototype, "targetValue", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], CreateSharedGoalDto.prototype, "dueDate", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ type: 'array', items: { type: 'object', properties: { employeeId: { type: 'string' }, weightage: { type: 'number' } } } }),
+    __metadata("design:type", Array)
+], CreateSharedGoalDto.prototype, "assignments", void 0);
 //# sourceMappingURL=goals.dto.js.map

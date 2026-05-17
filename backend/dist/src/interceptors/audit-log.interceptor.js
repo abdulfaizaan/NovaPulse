@@ -38,7 +38,7 @@ let AuditLogInterceptor = class AuditLogInterceptor {
                             entityType,
                             entityId,
                             action: method,
-                            afterValue: response ? JSON.parse(JSON.stringify(response)) : null,
+                            afterValue: response ? JSON.stringify(response) : null,
                         }
                     });
                 }

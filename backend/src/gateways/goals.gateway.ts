@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { DomainEvent } from '../events/events.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 @WebSocketGateway({
@@ -23,6 +24,8 @@ import { DomainEvent } from '../events/events.service';
 export class GoalsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
+
+  constructor(private prisma: PrismaService) {}
 
   private logger = new Logger(GoalsGateway.name);
   private userSockets = new Map<string, Set<string>>();
@@ -55,25 +58,51 @@ export class GoalsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @OnEvent('goal.created')
-  handleGoalCreated(event: DomainEvent) {
+  async handleGoalCreated(event: DomainEvent) {
     this.broadcastToTeam(event.data.employeeId, 'goal:created', event);
+    const employee = await this.prisma.user.findUnique({
+      where: { id: event.data.employeeId },
+      select: { managerId: true }
+    });
+    if (employee?.managerId) {
+      this.broadcastToTeam(employee.managerId, 'goal:created', event);
+    }
   }
 
   @OnEvent('goal.submitted')
-  handleGoalSubmitted(event: DomainEvent) {
+  async handleGoalSubmitted(event: DomainEvent) {
     this.broadcastToTeam(event.data.employeeId, 'goal:submitted', event);
+    const goal = await this.prisma.goal.findUnique({
+      where: { id: event.aggregateId },
+      include: { employee: true }
+    });
+    if (goal?.employee?.managerId) {
+      this.broadcastToTeam(goal.employee.managerId, 'goal:submitted', event);
+    }
   }
 
   @OnEvent('goal.approved')
-  handleGoalApproved(event: DomainEvent) {
-    this.broadcastToTeam(event.data.approverId, 'goal:approved', event);
-    this.broadcastToTeam(event.actor.id, 'goal:approved', event);
+  async handleGoalApproved(event: DomainEvent) {
+    const goal = await this.prisma.goal.findUnique({
+      where: { id: event.aggregateId },
+      select: { employeeId: true }
+    });
+    if (goal?.employeeId) {
+      this.broadcastToTeam(goal.employeeId, 'goal:approved', event);
+      this.broadcastToTeam(event.actor.id, 'goal:approved', event);
+    }
   }
 
   @OnEvent('goal.rejected')
-  handleGoalRejected(event: DomainEvent) {
-    this.broadcastToTeam(event.actor.id, 'goal:rejected', event);
-    this.broadcastToTeam(event.data.approverId, 'goal:rejected', event);
+  async handleGoalRejected(event: DomainEvent) {
+    const goal = await this.prisma.goal.findUnique({
+      where: { id: event.aggregateId },
+      select: { employeeId: true }
+    });
+    if (goal?.employeeId) {
+      this.broadcastToTeam(goal.employeeId, 'goal:rejected', event);
+      this.broadcastToTeam(event.actor.id, 'goal:rejected', event);
+    }
   }
 
   @OnEvent('escalation.triggered')

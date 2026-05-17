@@ -112,7 +112,7 @@ export function EmployeeDashboard({ onAddGoal, onOpenAI }: { onAddGoal: () => vo
           </CardHeader>
           <CardContent className="pt-6">
             <div className="h-[260px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={260}>
                 <AreaChart data={chartData}>
                   <defs><linearGradient id="colorAch" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#818cf8" stopOpacity={0.2}/><stop offset="95%" stopColor="#818cf8" stopOpacity={0}/></linearGradient></defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
@@ -131,7 +131,7 @@ export function EmployeeDashboard({ onAddGoal, onOpenAI }: { onAddGoal: () => vo
             <CardHeader className="border-b border-white/5 py-4"><CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-immersive-muted">Thrust Area Health</CardTitle></CardHeader>
             <CardContent className="pt-6">
               <div className="h-[160px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={160}>
                   <BarChart data={kpiData} layout="vertical">
                     <XAxis type="number" hide /><YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={80} tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} />
                     <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} />

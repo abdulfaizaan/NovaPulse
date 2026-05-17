@@ -62,6 +62,42 @@ let CheckinsService = class CheckinsService {
             where: { goalId }
         });
     }
+    async review(checkinId, managerId, data) {
+        const checkin = await this.prisma.quarterlyCheckin.findUnique({
+            where: { id: checkinId },
+            include: { employee: true, goal: true },
+        });
+        if (!checkin)
+            throw new common_1.NotFoundException('Check-in not found');
+        if (checkin.employee.managerId !== managerId) {
+            throw new common_1.ForbiddenException('You can only review check-ins of your direct reports');
+        }
+        const updatedCheckin = await this.prisma.quarterlyCheckin.update({
+            where: { id: checkinId },
+            data: {
+                status: data.status,
+            },
+        });
+        if (data.comment) {
+            await this.prisma.comment.create({
+                data: {
+                    content: `[Check-in Review: ${data.status}] ${data.comment}`,
+                    userId: managerId,
+                    checkinId: checkinId,
+                },
+            });
+        }
+        if (data.status === 'APPROVED') {
+            await this.prisma.goal.update({
+                where: { id: checkin.goalId },
+                data: {
+                    achievementValue: checkin.actualAchievement,
+                    progressScore: checkin.completionPercentage,
+                },
+            });
+        }
+        return updatedCheckin;
+    }
 };
 exports.CheckinsService = CheckinsService;
 exports.CheckinsService = CheckinsService = __decorate([

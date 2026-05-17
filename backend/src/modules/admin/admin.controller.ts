@@ -9,6 +9,7 @@ import { Role } from '../../common/enums';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AdminEventStreamService } from './event-stream.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EscalationService } from '../../escalation/escalation.service';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -21,7 +22,29 @@ export class AdminController {
     private readonly adminService: AdminService,
     private eventStreamService: AdminEventStreamService,
     private prisma: PrismaService,
+    private escalationService: EscalationService,
   ) {}
+
+  @Post('escalations/trigger/pending-approvals')
+  @ApiOperation({ summary: 'Manually run pending approvals escalation check' })
+  async triggerPendingApprovals() {
+    await this.escalationService.checkPendingApprovals();
+    return { success: true, message: 'Pending approvals escalation check executed.' };
+  }
+
+  @Post('escalations/trigger/overdue-checkins')
+  @ApiOperation({ summary: 'Manually run overdue checkins escalation check' })
+  async triggerOverdueCheckins() {
+    await this.escalationService.checkOverdueCheckins();
+    return { success: true, message: 'Overdue checkins escalation check executed.' };
+  }
+
+  @Post('escalations/trigger/stale-goals')
+  @ApiOperation({ summary: 'Manually run stale goals escalation check' })
+  async triggerStaleGoals() {
+    await this.escalationService.checkStaleGoals();
+    return { success: true, message: 'Stale goals escalation check executed.' };
+  }
 
   @Post('cycles')
   @ApiOperation({ summary: 'Create a new performance cycle' })
@@ -111,6 +134,16 @@ export class AdminController {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  @Patch('escalations/:id/resolve')
+  @ApiOperation({ summary: 'Resolve an open escalation' })
+  async resolveEscalation(@Param('id') id: string) {
+    await this.prisma.escalation.update({
+      where: { id },
+      data: { status: 'RESOLVED' },
+    });
+    return { success: true, message: 'Escalation resolved successfully.' };
   }
 
   @Get('dashboard-summary')

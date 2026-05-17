@@ -28,6 +28,9 @@ let GoalsController = class GoalsController {
     constructor(goalsService) {
         this.goalsService = goalsService;
     }
+    createShared(user, createSharedGoalDto) {
+        return this.goalsService.createShared(user.id, createSharedGoalDto);
+    }
     create(user, createGoalDto) {
         return this.goalsService.create(user.id, createGoalDto);
     }
@@ -48,6 +51,16 @@ let GoalsController = class GoalsController {
     }
 };
 exports.GoalsController = GoalsController;
+__decorate([
+    (0, common_1.Post)('shared'),
+    (0, roles_decorator_1.Roles)(enums_1.Role.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Create and cascade a shared goal to team members' }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, goals_dto_1.CreateSharedGoalDto]),
+    __metadata("design:returntype", void 0)
+], GoalsController.prototype, "createShared", null);
 __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)(enums_1.Role.EMPLOYEE),

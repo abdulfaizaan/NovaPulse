@@ -34,6 +34,9 @@ let CheckinsController = class CheckinsController {
     findByGoal(goalId, user) {
         return this.checkinsService.findByGoal(goalId, user.id, user.role);
     }
+    review(checkinId, user, reviewCheckinDto) {
+        return this.checkinsService.review(checkinId, user.id, reviewCheckinDto);
+    }
 };
 exports.CheckinsController = CheckinsController;
 __decorate([
@@ -55,6 +58,17 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], CheckinsController.prototype, "findByGoal", null);
+__decorate([
+    (0, common_1.Patch)(':checkinId/review'),
+    (0, roles_decorator_1.Roles)(enums_1.Role.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Review a subordinates check-in (Approve/Reject with feedback)' }),
+    __param(0, (0, common_1.Param)('checkinId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, checkin_dto_1.ReviewCheckinDto]),
+    __metadata("design:returntype", void 0)
+], CheckinsController.prototype, "review", null);
 exports.CheckinsController = CheckinsController = __decorate([
     (0, swagger_1.ApiTags)('Check-ins'),
     (0, swagger_1.ApiBearerAuth)(),

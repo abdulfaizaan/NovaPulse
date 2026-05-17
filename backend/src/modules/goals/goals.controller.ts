@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, UseGuards, UseInterceptors } from '@nestjs/common';
 import { GoalsService } from './goals.service';
-import { CreateGoalDto, UpdateGoalDto } from './dto/goals.dto';
+import { CreateGoalDto, UpdateGoalDto, CreateSharedGoalDto } from './dto/goals.dto';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { RolesGuard } from '../../guards/roles.guard';
 import { Roles } from '../../decorators/roles.decorator';
@@ -16,6 +16,13 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 @Controller('goals')
 export class GoalsController {
   constructor(private readonly goalsService: GoalsService) {}
+
+  @Post('shared')
+  @Roles(Role.MANAGER)
+  @ApiOperation({ summary: 'Create and cascade a shared goal to team members' })
+  createShared(@CurrentUser() user: any, @Body() createSharedGoalDto: CreateSharedGoalDto) {
+    return this.goalsService.createShared(user.id, createSharedGoalDto);
+  }
 
   @Post()
   @Roles(Role.EMPLOYEE)

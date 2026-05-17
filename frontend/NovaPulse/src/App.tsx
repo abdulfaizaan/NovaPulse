@@ -63,17 +63,22 @@ function AppShell() {
   useWebSocket(user?.id || null, (event) => {
     // When a websocket event fires, refresh goals to sync UI
     fetchGoals();
-    fetchAuditLogs();
+    if (effectiveRole === "admin") {
+      fetchAuditLogs();
+    }
   });
 
   React.useEffect(() => {
+    if (!user) return;
     fetchGoals(); // initial fetch
-    fetchAuditLogs();
+    if (effectiveRole === "admin") {
+      fetchAuditLogs();
+    }
     const hasSeenTour = localStorage.getItem("novapulse_tour_seen");
     if (!hasSeenTour) {
       setTimeout(() => setShowTour(true), 1500);
     }
-  }, []);
+  }, [user, effectiveRole]);
 
   const handleGoalSubmit = (data: any) => {
     setIsGoalModalOpen(false);
@@ -105,7 +110,7 @@ function AppShell() {
   const renderContent = () => {
     // Pages that need specific permissions
     const adminOnlyPages = ["users", "cycles", "audit", "escalations", "settings", "adv-analytics"];
-    const managerPages = ["team-goals", "approvals", "1on1", "capacity", "ai-review"];
+    const managerPages = ["team-goals", "approvals", "capacity", "ai-review"];
 
     if (adminOnlyPages.includes(activeTab) && effectiveRole !== "admin") {
       return <AccessRestricted requiredRole="admin" onGoBack={() => setActiveTab("dashboard")} />;
@@ -127,6 +132,10 @@ function AppShell() {
     }
 
     switch (activeTab) {
+      case "goals":
+        return <EmployeeDashboard onAddGoal={() => setIsGoalModalOpen(true)} onOpenAI={() => setShowAI(true)} />;
+      case "team-goals":
+        return <ManagerDashboard />;
       case "alignment":
         return <AlignmentTree />;
       case "dependency-graph":
@@ -137,6 +146,8 @@ function AppShell() {
         return <CapacityPlanning />;
       case "escalations":
         return <EscalationEngine />;
+      case "analytics":
+        return <AdvancedAnalytics />;
       case "adv-analytics":
         return (
           <div className="space-y-8">
@@ -155,6 +166,14 @@ function AppShell() {
         return <QuarterlyCheckinPage />;
       case "approvals":
         return <ManagerApprovalView />;
+      case "users":
+        return <AdminDashboard initialTab="users" />;
+      case "cycles":
+        return <AdminDashboard initialTab="cycles" />;
+      case "audit":
+        return <AdminDashboard initialTab="audit" />;
+      case "settings":
+        return <AdminDashboard initialTab="settings" />;
     }
 
     // Placeholder for non-dashboard pages
@@ -287,15 +306,22 @@ function AppShell() {
   );
 }
 
-/* ================================================================== */
-/*  Root App (handles landing/auth/app routing)                        */
-/* ================================================================== */
-export default function App() {
+function AppContent() {
+  const { user } = useAuth();
   const [view, setView] = React.useState<AppView>(() => {
     return sessionStorage.getItem("novapulse_auth") === "true" ? "app" : "landing";
   });
 
   const ThemeProviderAny = ThemeProvider as any;
+
+  // Automatically handle redirection when auth state changes (e.g. on sign out)
+  React.useEffect(() => {
+    if (!user && view === "app") {
+      setView("landing");
+    } else if (user && view !== "app") {
+      setView("app");
+    }
+  }, [user, view]);
 
   /* ── Landing page ── */
   if (view === "landing") {
@@ -310,33 +336,43 @@ export default function App() {
   /* ── Auth page ── */
   if (view === "auth") {
     return (
-      <AuthProvider>
+      <>
         <AuthPageWrapper onComplete={() => setView("app")} />
         <Toaster position="bottom-right" />
-      </AuthProvider>
+      </>
     );
   }
 
   /* ── Main application ── */
   return (
+    <ThemeProviderAny attribute="class" defaultTheme="dark" enableSystem>
+      <TooltipProvider>
+        <AppShell />
+      </TooltipProvider>
+    </ThemeProviderAny>
+  );
+}
+
+export default function App() {
+  return (
     <AuthProvider>
-      <ThemeProviderAny attribute="class" defaultTheme="dark" enableSystem>
-        <TooltipProvider>
-          <AppShell />
-        </TooltipProvider>
-      </ThemeProviderAny>
+      <AppContent />
     </AuthProvider>
   );
 }
 
 /* ── Small wrapper to connect AuthPage ↔ AuthContext ── */
 function AuthPageWrapper({ onComplete }: { onComplete: () => void }) {
-  const { login } = useAuth();
+  const { login, loginWithToken } = useAuth();
 
   return (
     <AuthPage
-      onAuth={(email, role) => {
-        login(email, "password", role as UserRole);
+      onAuth={async (email, role, token) => {
+        if (token) {
+          await loginWithToken(token);
+        } else {
+          login(email, "password", role as UserRole);
+        }
         onComplete();
         toast.success("Welcome to NovaPulse!", {
           description: "You're now signed in. Let's get started.",

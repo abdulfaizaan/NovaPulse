@@ -192,10 +192,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }).join(''));
       const payload = JSON.parse(jsonPayload);
       
-      const role = payload.role || 'employee';
-      const email = payload.email || DEMO_USERS[role as UserRole].email;
+      const role = (payload.role || 'employee').toLowerCase() as UserRole;
+      const email = payload.email || DEMO_USERS[role].email;
       
-      const authedUser: AuthUser = { ...DEMO_USERS[role as UserRole], email, name: payload.name || DEMO_USERS[role as UserRole].name };
+      const authedUser: AuthUser = { 
+        ...DEMO_USERS[role], 
+        id: payload.sub || DEMO_USERS[role].id,
+        email, 
+        name: payload.name || DEMO_USERS[role].name 
+      };
       setUser(authedUser);
       sessionStorage.setItem("novapulse_user", JSON.stringify(authedUser));
       sessionStorage.setItem("novapulse_auth", "true");
@@ -213,6 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     sessionStorage.removeItem("novapulse_user");
     sessionStorage.removeItem("novapulse_auth");
+    sessionStorage.removeItem("novapulse_token");
   }, []);
 
   const hasPermission = React.useCallback(

@@ -93,7 +93,8 @@ let AuthService = class AuthService {
         const payload = {
             sub: user.id,
             email: user.email,
-            role: user.role
+            role: user.role,
+            name: user.fullName
         };
         return {
             accessToken: this.jwtService.sign(payload),
@@ -110,7 +111,8 @@ let AuthService = class AuthService {
         const payload = {
             sub: user.id,
             email: user.email,
-            role: user.role
+            role: user.role,
+            name: user.fullName
         };
         return {
             accessToken: this.jwtService.sign(payload)

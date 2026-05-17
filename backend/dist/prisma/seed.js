@@ -38,6 +38,9 @@ const bcrypt = __importStar(require("bcrypt"));
 const prisma = new client_1.PrismaClient();
 async function main() {
     const hashedPassword = await bcrypt.hash('password123', 10);
+    await prisma.goal.deleteMany({});
+    await prisma.user.deleteMany({});
+    await prisma.department.deleteMany({});
     const dept = await prisma.department.create({
         data: { name: 'Engineering' }
     });

@@ -46,6 +46,12 @@ export interface Goal {
   lockedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  employee?: {
+    id: string;
+    fullName: string;
+    email: string;
+    managerId?: string;
+  };
 }
 
 export interface GoalComment {
@@ -68,6 +74,7 @@ export interface QuarterlyCheckin {
   progressStatus: GoalProgressStatus;
   notes: string;
   completionPercentage: number;
+  status?: string;
   managerComment?: string;
   createdAt: string;
   updatedAt: string;

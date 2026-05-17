@@ -56,10 +56,10 @@ export declare class AdminController {
         createdAt: Date;
         updatedAt: Date;
         status: string;
-        targetId: string;
-        initiatorId: string | null;
         reason: string;
         level: number;
+        targetId: string;
+        initiatorId: string | null;
     })[]>;
     getAuditLogs(limit?: string): Promise<({
         user: {

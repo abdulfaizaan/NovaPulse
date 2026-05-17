@@ -16,7 +16,7 @@ import {
 import { API_URL } from "@/src/constants";
 
 interface AuthPageProps {
-  onAuth: (email: string, role: string) => void;
+  onAuth: (email: string, role: string, token: string) => void;
 }
 
 export function AuthPage({ onAuth }: AuthPageProps) {
@@ -56,10 +56,10 @@ export function AuthPage({ onAuth }: AuthPageProps) {
       const data = await response.json();
       
       // Store token (in a real app, use secure storage)
-      localStorage.setItem("token", data.accessToken);
+      sessionStorage.setItem("novapulse_token", data.accessToken);
       
       // We pass the email and role to parent as required by the prop signature
-      onAuth(data.user.email, data.user.role.toLowerCase());
+      onAuth(data.user.email, data.user.role.toLowerCase(), data.accessToken);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -237,6 +237,56 @@ export function AuthPage({ onAuth }: AuthPageProps) {
                 : "Already have an account? Sign in"}
             </button>
           </div>
+
+          {mode === "login" && (
+            <div className="mt-8 pt-6 border-t border-white/10">
+              <p className="text-xs text-slate-400 mb-4 text-center uppercase tracking-wider font-semibold">Demo Credentials</p>
+              <div className="grid grid-cols-1 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEmail("admin@novapulse.io");
+                    setPassword("password123");
+                  }}
+                  className="bg-white/5 border-white/10 hover:bg-white/10 text-white text-xs h-9 justify-start px-4"
+                >
+                  <div className="flex justify-between w-full">
+                    <span>Admin</span>
+                    <span className="text-slate-400 font-mono">admin@novapulse.io</span>
+                  </div>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEmail("manager@novapulse.io");
+                    setPassword("password123");
+                  }}
+                  className="bg-white/5 border-white/10 hover:bg-white/10 text-white text-xs h-9 justify-start px-4"
+                >
+                  <div className="flex justify-between w-full">
+                    <span>Manager</span>
+                    <span className="text-slate-400 font-mono">manager@novapulse.io</span>
+                  </div>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEmail("employee@novapulse.io");
+                    setPassword("password123");
+                  }}
+                  className="bg-white/5 border-white/10 hover:bg-white/10 text-white text-xs h-9 justify-start px-4"
+                >
+                  <div className="flex justify-between w-full">
+                    <span>Employee</span>
+                    <span className="text-slate-400 font-mono">employee@novapulse.io</span>
+                  </div>
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>

@@ -41,7 +41,7 @@ export function KPIForecasting() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6 h-[400px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={350}>
             <ComposedChart data={FORECAST_DATA} margin={{ top: 20, right: 20, bottom: 20, left: -20 }}>
               <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 800 }} dy={10} />

@@ -34,6 +34,7 @@ import {
   LineChart,
 } from "lucide-react";
 import { UserRole } from "@/src/types";
+import { useGoalStore } from "@/src/stores/goalStore";
 import { cn } from "@/lib/utils";
 import {
   Sidebar,
@@ -63,6 +64,7 @@ const EMPLOYEE_ITEMS: SidebarItem[] = [
   { title: "Quarterly Check-ins", icon: CheckCircle2, id: "checkins" },
   { title: "Alignment Tree", icon: Layers, id: "alignment" },
   { title: "Goal Graph", icon: GitBranch, id: "dependency-graph" },
+  { title: "1-on-1 Workspace", icon: MessageSquare, id: "1on1" },
   { title: "Continuous Feedback", icon: MessageSquareHeart, id: "feedback" },
   { title: "Analytics", icon: BarChart3, id: "analytics" },
   { title: "AI Assistant", icon: Sparkles, id: "ai-assistant" },
@@ -96,7 +98,7 @@ interface AppSidebarProps {
   role: UserRole;
   activeId: string;
   onNavigate: (id: string) => void;
-  user: { name: string; avatar?: string; email: string };
+  user: { id?: string; name: string; avatar?: string; email: string };
   onLogout?: () => void;
   impersonating?: { name: string; role: UserRole } | null;
   onStopImpersonation?: () => void;
@@ -111,12 +113,23 @@ export function AppSidebar({
   impersonating,
   onStopImpersonation,
 }: AppSidebarProps) {
-  const items =
-    role === "admin"
+  const { getPendingApprovals } = useGoalStore();
+  const pendingCount = getPendingApprovals(user?.id || '').length;
+
+  const items = React.useMemo(() => {
+    const rawItems = role === "admin"
       ? ADMIN_ITEMS
       : role === "manager"
       ? MANAGER_ITEMS
       : EMPLOYEE_ITEMS;
+
+    return rawItems.map(item => {
+      if (item.id === "approvals") {
+        return { ...item, badge: pendingCount > 0 ? String(pendingCount) : undefined };
+      }
+      return item;
+    });
+  }, [role, pendingCount]);
 
   const roleBadge =
     role === "admin"

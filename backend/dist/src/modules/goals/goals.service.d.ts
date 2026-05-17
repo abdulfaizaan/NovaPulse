@@ -1,11 +1,23 @@
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateGoalDto, UpdateGoalDto } from './dto/goals.dto';
+import { CreateGoalDto, UpdateGoalDto, CreateSharedGoalDto } from './dto/goals.dto';
 import { Role } from '../../common/enums';
 import { EventsService } from '../../events/events.service';
 export declare class GoalsService {
     private prisma;
     private eventsService;
     constructor(prisma: PrismaService, eventsService: EventsService);
+    createShared(creatorId: string, data: CreateSharedGoalDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string;
+        title: string;
+        thrustArea: string;
+        unitOfMeasure: string;
+        targetValue: number;
+        achievementValue: number;
+        creatorId: string;
+    }>;
     create(employeeId: string, createGoalDto: CreateGoalDto): Promise<{
         employee: {
             id: string;
@@ -36,10 +48,10 @@ export declare class GoalsService {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
     findAll(userId: string, role: Role): Promise<({
         employee: {
@@ -71,10 +83,10 @@ export declare class GoalsService {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     })[]>;
     findOne(id: string, userId: string, role: Role): Promise<{
         employee: {
@@ -106,10 +118,10 @@ export declare class GoalsService {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
     update(id: string, updateGoalDto: UpdateGoalDto, userId: string, role: Role): Promise<{
         employee: {
@@ -141,10 +153,10 @@ export declare class GoalsService {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
     submit(id: string, userId: string): Promise<{
         employee: {
@@ -176,10 +188,10 @@ export declare class GoalsService {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
     approve(id: string, managerId: string): Promise<{
         employee: {
@@ -211,10 +223,10 @@ export declare class GoalsService {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
     reject(id: string, managerId: string, comment: string): Promise<{
         employee: {
@@ -246,9 +258,9 @@ export declare class GoalsService {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
 }

@@ -48,7 +48,8 @@ class ApiClient {
         // Token invalid, clear it
         sessionStorage.removeItem('novapulse_token');
         sessionStorage.removeItem('novapulse_user');
-        window.location.href = '/auth';
+        sessionStorage.removeItem('novapulse_auth');
+        window.location.href = '/';
         return { success: false, error: 'Unauthorized - please login again' };
       }
 
@@ -109,6 +110,10 @@ class ApiClient {
     return this.post('/goals', data);
   }
 
+  async createSharedGoal(data: any) {
+    return this.post('/goals/shared', data);
+  }
+
   async updateGoal(id: string, data: any) {
     return this.patch(`/goals/${id}`, data);
   }
@@ -134,11 +139,11 @@ class ApiClient {
   // ─────────────────────────────────────────────────────────────────
 
   async getGoalCheckins(goalId: string) {
-    return this.get(`/goals/${goalId}/checkins`);
+    return this.get(`/checkins/goal/${goalId}`);
   }
 
   async submitCheckin(goalId: string, data: any) {
-    return this.post(`/goals/${goalId}/checkins`, data);
+    return this.post('/checkins', { ...data, goalId });
   }
 
   async reviewCheckin(checkinId: string, data: any) {
@@ -178,6 +183,26 @@ class ApiClient {
 
   async createCycle(data: any) {
     return this.post('/admin/cycles', data);
+  }
+
+  async getEscalations() {
+    return this.get('/admin/escalations');
+  }
+
+  async triggerPendingApprovalsEscalation() {
+    return this.post('/admin/escalations/trigger/pending-approvals', {});
+  }
+
+  async triggerOverdueCheckinsEscalation() {
+    return this.post('/admin/escalations/trigger/overdue-checkins', {});
+  }
+
+  async triggerStaleGoalsEscalation() {
+    return this.post('/admin/escalations/trigger/stale-goals', {});
+  }
+
+  async resolveEscalation(id: string) {
+    return this.patch(`/admin/escalations/${id}/resolve`, {});
   }
 
   // ─────────────────────────────────────────────────────────────────

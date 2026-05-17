@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateCheckinDto } from './dto/checkin.dto';
+import { CreateCheckinDto, ReviewCheckinDto } from './dto/checkin.dto';
 import { Role } from '../../common/enums';
 
 @Injectable()
@@ -60,5 +60,49 @@ export class CheckinsService {
     return this.prisma.quarterlyCheckin.findMany({
       where: { goalId }
     });
+  }
+
+  async review(checkinId: string, managerId: string, data: ReviewCheckinDto) {
+    const checkin = await this.prisma.quarterlyCheckin.findUnique({
+      where: { id: checkinId },
+      include: { employee: true, goal: true },
+    });
+
+    if (!checkin) throw new NotFoundException('Check-in not found');
+    if (checkin.employee.managerId !== managerId) {
+      throw new ForbiddenException('You can only review check-ins of your direct reports');
+    }
+
+    // Update status
+    const updatedCheckin = await this.prisma.quarterlyCheckin.update({
+      where: { id: checkinId },
+      data: {
+        status: data.status,
+      },
+    });
+
+    // Create a comment with the review notes if provided
+    if (data.comment) {
+      await this.prisma.comment.create({
+        data: {
+          content: `[Check-in Review: ${data.status}] ${data.comment}`,
+          userId: managerId,
+          checkinId: checkinId,
+        },
+      });
+    }
+
+    // If check-in is APPROVED, update goal's current achievement value
+    if ((data.status as any) === 'APPROVED') {
+      await this.prisma.goal.update({
+        where: { id: checkin.goalId },
+        data: {
+          achievementValue: checkin.actualAchievement,
+          progressScore: checkin.completionPercentage,
+        },
+      });
+    }
+
+    return updatedCheckin;
   }
 }

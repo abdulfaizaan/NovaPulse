@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Goal, GoalStatus, GoalProgressStatus, UnitOfMeasure, QuarterlyCheckin, AuditLogEntry, ApprovalRequest, Notification } from '../types';
-import { calculateProgressScore } from '../types';
+import { calculateProgressScore, UOM_OPTIONS } from '../types';
 
 // ── Seed Data (realistic demo) ─────────────────────────────
 const SEED_GOALS: Goal[] = [
@@ -86,9 +86,11 @@ interface GoalStore {
   // Fetching
   fetchGoals: () => Promise<void>;
   fetchAuditLogs: () => Promise<void>;
+  fetchGoalCheckins: (goalId: string) => Promise<void>;
 
   // Goal CRUD
   addGoal: (goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt' | 'progressScore'>) => Goal;
+  createSharedGoal: (data: any) => Promise<void>;
   updateGoal: (id: string, updates: Partial<Goal>) => void;
   deleteGoal: (id: string) => void;
 
@@ -103,6 +105,7 @@ interface GoalStore {
   // Check-ins
   addCheckin: (checkin: Omit<QuarterlyCheckin, 'id' | 'createdAt' | 'updatedAt'>) => void;
   addManagerComment: (checkinId: string, comment: string) => void;
+  reviewCheckin: (checkinId: string, status: 'APPROVED' | 'REJECTED' | 'PENDING', comment?: string) => Promise<void>;
 
   // Queries
   getGoalsByOwner: (ownerId: string) => Goal[];
@@ -132,6 +135,30 @@ const now = () => new Date().toISOString();
 
 import { apiClient } from '../lib/api-client';
 
+import { toast } from 'sonner';
+
+const mapGoalFromApi = (apiGoal: any): Goal => ({
+  id: apiGoal.id,
+  title: apiGoal.title,
+  description: apiGoal.description,
+  thrustArea: apiGoal.thrustArea,
+  uom: apiGoal.unitOfMeasure,
+  uomLabel: UOM_OPTIONS.find((o) => o.value === apiGoal.unitOfMeasure)?.label || apiGoal.unitOfMeasure,
+  target: apiGoal.targetValue,
+  achievement: apiGoal.achievementValue || 0,
+  weightage: apiGoal.weightage,
+  status: (apiGoal.status || 'draft').toLowerCase() as GoalStatus,
+  progressStatus: 'not-started', // simplified for now
+  progressScore: apiGoal.progressScore || 0,
+  deadline: apiGoal.dueDate ? new Date(apiGoal.dueDate).toISOString().split('T')[0] : '',
+  ownerId: apiGoal.employeeId,
+  ownerName: apiGoal.employee?.fullName || 'Unknown',
+  lockedAt: apiGoal.lockedAt,
+  createdAt: apiGoal.createdAt,
+  updatedAt: apiGoal.updatedAt,
+  employee: apiGoal.employee,
+});
+
 export const useGoalStore = create<GoalStore>()(
   (set, get) => ({
     goals: [],
@@ -143,32 +170,102 @@ export const useGoalStore = create<GoalStore>()(
     fetchGoals: async () => {
       const res = await apiClient.listGoals();
       if (res.success && res.data) {
-        set({ goals: res.data });
+        set({ goals: (res.data as any[]).map(mapGoalFromApi) });
       }
     },
     
     fetchAuditLogs: async () => {
       const res = await apiClient.getAuditLogs();
       if (res.success && res.data) {
-        set({ auditLogs: res.data });
+        const mapped = (res.data as any[]).map((log) => ({
+          id: log.id,
+          userId: log.userId || '',
+          userName: log.user?.fullName || 'System',
+          entityType: log.entityType,
+          entityId: log.entityId,
+          action: log.action,
+          beforeValue: log.beforeValue || undefined,
+          afterValue: log.afterValue || undefined,
+          timestamp: log.createdAt || new Date().toISOString(),
+        }));
+        set({ auditLogs: mapped });
       }
     },
 
-    addGoal: async (goalData) => {
-      // Optimistic UI could be here, but let's just wait for real data to ensure ID correctness
-      const res = await apiClient.createGoal(goalData);
+    fetchGoalCheckins: async (goalId) => {
+      const res = await apiClient.getGoalCheckins(goalId);
       if (res.success && res.data) {
-        set((s) => ({ goals: [...s.goals, res.data] }));
-        return res.data;
+        const incoming = (res.data as any[]).map((c) => c as unknown as QuarterlyCheckin);
+        set((s) => {
+          const filtered = s.checkins.filter((existing) => existing.goalId !== goalId);
+          return { checkins: [...filtered, ...incoming] };
+        });
       }
-      return null;
+    },
+
+    addGoal: (goalData) => {
+      const tempId = `g-${uid()}`;
+      const newGoal: Goal = {
+        ...goalData,
+        id: tempId,
+        progressScore: 0,
+        createdAt: now(),
+        updatedAt: now(),
+      };
+      
+      // Optimistically add to store
+      set((s) => ({ goals: [...s.goals, newGoal] }));
+
+      // Trigger API call in background
+      const payload = {
+        title: goalData.title,
+        description: goalData.description,
+        thrustArea: goalData.thrustArea,
+        unitOfMeasure: goalData.uom,
+        targetValue: goalData.target,
+        weightage: goalData.weightage,
+        dueDate: goalData.deadline ? new Date(goalData.deadline).toISOString() : new Date().toISOString(),
+      };
+
+      apiClient.createGoal(payload).then((res) => {
+        if (res.success && res.data) {
+          const apiGoal = mapGoalFromApi(res.data);
+          // Replace the optimistic goal with the real one from the server
+          set((s) => ({
+            goals: s.goals.map((g) => g.id === tempId ? apiGoal : g),
+          }));
+        } else {
+          // Rollback if failed
+          set((s) => ({ goals: s.goals.filter((g) => g.id !== tempId) }));
+          toast.error("Failed to sync new goal with server.");
+        }
+      });
+
+      return newGoal;
+    },
+
+    createSharedGoal: async (data) => {
+      const res = await apiClient.createSharedGoal(data);
+      if (res.success) {
+        toast.success("Shared Goal Cascaded!", { description: "Assigned goals have been created for selected team members." });
+        get().fetchGoals(); // Reload team goals
+      } else {
+        toast.error("Failed to cascade shared goal.");
+      }
     },
 
     updateGoal: async (id, updates) => {
-      const res = await apiClient.updateGoal(id, updates);
+      const payload: any = {};
+      if (updates.target) payload.targetValue = updates.target;
+      if (updates.weightage) payload.weightage = updates.weightage;
+      if (updates.title) payload.title = updates.title;
+      if (updates.description) payload.description = updates.description;
+      if (updates.status) payload.status = updates.status.toUpperCase();
+      
+      const res = await apiClient.updateGoal(id, payload);
       if (res.success && res.data) {
         set((s) => ({
-          goals: s.goals.map((g) => g.id === id ? res.data : g),
+          goals: s.goals.map((g) => g.id === id ? mapGoalFromApi(res.data) : g),
         }));
       }
     },
@@ -181,28 +278,28 @@ export const useGoalStore = create<GoalStore>()(
     submitGoal: async (id) => {
       const res = await apiClient.submitGoal(id);
       if (res.success && res.data) {
-        set((s) => ({ goals: s.goals.map((g) => g.id === id ? res.data : g) }));
+        set((s) => ({ goals: s.goals.map((g) => g.id === id ? mapGoalFromApi(res.data) : g) }));
       }
     },
 
     approveGoal: async (id, managerId) => {
       const res = await apiClient.approveGoal(id);
       if (res.success && res.data) {
-        set((s) => ({ goals: s.goals.map((g) => g.id === id ? res.data : g) }));
+        set((s) => ({ goals: s.goals.map((g) => g.id === id ? mapGoalFromApi(res.data) : g) }));
       }
     },
 
     rejectGoal: async (id, managerId, comment) => {
       const res = await apiClient.rejectGoal(id, comment);
       if (res.success && res.data) {
-        set((s) => ({ goals: s.goals.map((g) => g.id === id ? res.data : g) }));
+        set((s) => ({ goals: s.goals.map((g) => g.id === id ? mapGoalFromApi(res.data) : g) }));
       }
     },
 
     requestRework: async (id, managerId, comment) => {
       const res = await apiClient.rejectGoal(id, comment);
       if (res.success && res.data) {
-        set((s) => ({ goals: s.goals.map((g) => g.id === id ? res.data : g) }));
+        set((s) => ({ goals: s.goals.map((g) => g.id === id ? mapGoalFromApi(res.data) : g) }));
       }
     },
 
@@ -214,14 +311,14 @@ export const useGoalStore = create<GoalStore>()(
     unlockGoal: async (id, adminId) => {
       const res = await apiClient.unlockGoal(id);
       if (res.success && res.data) {
-        set((s) => ({ goals: s.goals.map((g) => g.id === id ? res.data : g) }));
+        set((s) => ({ goals: s.goals.map((g) => g.id === id ? mapGoalFromApi(res.data) : g) }));
       }
     },
 
     addCheckin: async (data) => {
       const res = await apiClient.submitCheckin(data.goalId, data);
       if (res.success && res.data) {
-        set((s) => ({ checkins: [...s.checkins, res.data] }));
+        set((s) => ({ checkins: [...s.checkins, res.data as unknown as QuarterlyCheckin] }));
         get().fetchGoals(); // Refresh goal progress
       }
     },
@@ -230,8 +327,21 @@ export const useGoalStore = create<GoalStore>()(
       const res = await apiClient.reviewCheckin(checkinId, { comment });
       if (res.success && res.data) {
         set((s) => ({
-          checkins: s.checkins.map((c) => c.id === checkinId ? res.data : c),
+          checkins: s.checkins.map((c) => c.id === checkinId ? res.data as unknown as QuarterlyCheckin : c),
         }));
+      }
+    },
+
+    reviewCheckin: async (checkinId, status, comment) => {
+      const res = await apiClient.reviewCheckin(checkinId, { status, comment });
+      if (res.success && res.data) {
+        set((s) => ({
+          checkins: s.checkins.map((c) => c.id === checkinId ? res.data as unknown as QuarterlyCheckin : c),
+        }));
+        get().fetchGoals(); // Refresh goal achievements if approved!
+        toast.success(`Check-in reviewed successfully! Status updated to ${status}.`);
+      } else {
+        toast.error("Failed to submit check-in review.");
       }
     },
 
@@ -240,7 +350,7 @@ export const useGoalStore = create<GoalStore>()(
       return get().goals.filter((g) => (g as any).employee?.managerId === managerId);
     },
     getPendingApprovals: (managerId) => {
-      return get().goals.filter((g) => (g as any).employee?.managerId === managerId && g.status === 'SUBMITTED');
+      return get().goals.filter((g) => (g as any).employee?.managerId === managerId && g.status === 'submitted');
     },
     getCheckinsByEmployee: (employeeId) => get().checkins.filter((c) => c.employeeId === employeeId),
 

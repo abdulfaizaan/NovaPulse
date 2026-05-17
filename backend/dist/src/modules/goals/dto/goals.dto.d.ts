@@ -16,3 +16,15 @@ export declare class UpdateGoalDto {
     weightage?: number;
     status?: GoalStatus;
 }
+export declare class CreateSharedGoalDto {
+    title: string;
+    description: string;
+    thrustArea: string;
+    unitOfMeasure: string;
+    targetValue: number;
+    dueDate: string;
+    assignments: {
+        employeeId: string;
+        weightage: number;
+    }[];
+}

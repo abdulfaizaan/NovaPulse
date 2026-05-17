@@ -24,14 +24,29 @@ const enums_1 = require("../../common/enums");
 const swagger_1 = require("@nestjs/swagger");
 const event_stream_service_1 = require("./event-stream.service");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const escalation_service_1 = require("../../escalation/escalation.service");
 let AdminController = class AdminController {
     adminService;
     eventStreamService;
     prisma;
-    constructor(adminService, eventStreamService, prisma) {
+    escalationService;
+    constructor(adminService, eventStreamService, prisma, escalationService) {
         this.adminService = adminService;
         this.eventStreamService = eventStreamService;
         this.prisma = prisma;
+        this.escalationService = escalationService;
+    }
+    async triggerPendingApprovals() {
+        await this.escalationService.checkPendingApprovals();
+        return { success: true, message: 'Pending approvals escalation check executed.' };
+    }
+    async triggerOverdueCheckins() {
+        await this.escalationService.checkOverdueCheckins();
+        return { success: true, message: 'Overdue checkins escalation check executed.' };
+    }
+    async triggerStaleGoals() {
+        await this.escalationService.checkStaleGoals();
+        return { success: true, message: 'Stale goals escalation check executed.' };
     }
     createCycle(createCycleDto) {
         return this.adminService.createCycle(createCycleDto);
@@ -99,6 +114,13 @@ let AdminController = class AdminController {
             orderBy: { createdAt: 'desc' },
         });
     }
+    async resolveEscalation(id) {
+        await this.prisma.escalation.update({
+            where: { id },
+            data: { status: 'RESOLVED' },
+        });
+        return { success: true, message: 'Escalation resolved successfully.' };
+    }
     async getDashboardSummary() {
         const [users, goals, completedGoals, openEscalations, pendingApprovals] = await Promise.all([
             this.prisma.user.count(),
@@ -119,6 +141,27 @@ let AdminController = class AdminController {
     }
 };
 exports.AdminController = AdminController;
+__decorate([
+    (0, common_1.Post)('escalations/trigger/pending-approvals'),
+    (0, swagger_1.ApiOperation)({ summary: 'Manually run pending approvals escalation check' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "triggerPendingApprovals", null);
+__decorate([
+    (0, common_1.Post)('escalations/trigger/overdue-checkins'),
+    (0, swagger_1.ApiOperation)({ summary: 'Manually run overdue checkins escalation check' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "triggerOverdueCheckins", null);
+__decorate([
+    (0, common_1.Post)('escalations/trigger/stale-goals'),
+    (0, swagger_1.ApiOperation)({ summary: 'Manually run stale goals escalation check' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "triggerStaleGoals", null);
 __decorate([
     (0, common_1.Post)('cycles'),
     (0, swagger_1.ApiOperation)({ summary: 'Create a new performance cycle' }),
@@ -182,6 +225,14 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getOpenEscalations", null);
 __decorate([
+    (0, common_1.Patch)('escalations/:id/resolve'),
+    (0, swagger_1.ApiOperation)({ summary: 'Resolve an open escalation' }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "resolveEscalation", null);
+__decorate([
     (0, common_1.Get)('dashboard-summary'),
     (0, swagger_1.ApiOperation)({ summary: 'Get admin dashboard summary' }),
     __metadata("design:type", Function),
@@ -197,6 +248,7 @@ exports.AdminController = AdminController = __decorate([
     (0, common_1.Controller)('admin'),
     __metadata("design:paramtypes", [admin_service_1.AdminService,
         event_stream_service_1.AdminEventStreamService,
-        prisma_service_1.PrismaService])
+        prisma_service_1.PrismaService,
+        escalation_service_1.EscalationService])
 ], AdminController);
 //# sourceMappingURL=admin.controller.js.map

@@ -7,3 +7,7 @@ export declare class CreateCheckinDto {
     status: CheckInStatus;
     notes?: string;
 }
+export declare class ReviewCheckinDto {
+    status: CheckInStatus;
+    comment?: string;
+}

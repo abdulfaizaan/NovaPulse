@@ -2,11 +2,25 @@ import { AdminService } from './admin.service';
 import { CreateCycleDto } from './dto/admin.dto';
 import { AdminEventStreamService } from './event-stream.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EscalationService } from '../../escalation/escalation.service';
 export declare class AdminController {
     private readonly adminService;
     private eventStreamService;
     private prisma;
-    constructor(adminService: AdminService, eventStreamService: AdminEventStreamService, prisma: PrismaService);
+    private escalationService;
+    constructor(adminService: AdminService, eventStreamService: AdminEventStreamService, prisma: PrismaService, escalationService: EscalationService);
+    triggerPendingApprovals(): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    triggerOverdueCheckins(): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    triggerStaleGoals(): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     createCycle(createCycleDto: CreateCycleDto): Promise<{
         id: string;
         name: string;
@@ -40,10 +54,10 @@ export declare class AdminController {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
     getAuditLogs(): Promise<({
         user: {
@@ -112,11 +126,15 @@ export declare class AdminController {
         createdAt: Date;
         updatedAt: Date;
         status: string;
-        targetId: string;
-        initiatorId: string | null;
         reason: string;
         level: number;
+        targetId: string;
+        initiatorId: string | null;
     })[]>;
+    resolveEscalation(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     getDashboardSummary(): Promise<{
         totalUsers: number;
         totalGoals: number;

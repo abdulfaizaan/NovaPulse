@@ -31,7 +31,7 @@ export class AuditLogInterceptor implements NestInterceptor {
                 entityType,
                 entityId,
                 action: method,
-                afterValue: response ? JSON.parse(JSON.stringify(response)) : null,
+                afterValue: response ? JSON.stringify(response) : null,
                 // Before value logic usually requires querying the DB before the action,
                 // which is better suited for specific services or a custom decorator/interceptor per entity.
                 // For global interceptor, we mostly log the result.

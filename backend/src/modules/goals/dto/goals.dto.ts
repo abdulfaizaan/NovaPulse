@@ -67,3 +67,32 @@ export class UpdateGoalDto {
   @IsEnum(GoalStatus)
   status?: GoalStatus;
 }
+
+export class CreateSharedGoalDto {
+  @ApiProperty()
+  @IsString()
+  title: string;
+
+  @ApiProperty()
+  @IsString()
+  description: string;
+
+  @ApiProperty()
+  @IsString()
+  thrustArea: string;
+
+  @ApiProperty()
+  @IsString()
+  unitOfMeasure: string;
+
+  @ApiProperty()
+  @IsNumber()
+  targetValue: number;
+
+  @ApiProperty()
+  @IsDateString()
+  dueDate: string;
+
+  @ApiProperty({ type: 'array', items: { type: 'object', properties: { employeeId: { type: 'string' }, weightage: { type: 'number' } } } })
+  assignments: { employeeId: string; weightage: number }[];
+}

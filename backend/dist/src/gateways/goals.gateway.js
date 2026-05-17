@@ -18,8 +18,13 @@ const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const common_1 = require("@nestjs/common");
 const event_emitter_1 = require("@nestjs/event-emitter");
+const prisma_service_1 = require("../prisma/prisma.service");
 let GoalsGateway = GoalsGateway_1 = class GoalsGateway {
+    prisma;
     server;
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
     logger = new common_1.Logger(GoalsGateway_1.name);
     userSockets = new Map();
     handleConnection(client) {
@@ -45,19 +50,45 @@ let GoalsGateway = GoalsGateway_1 = class GoalsGateway {
     handlePing(client) {
         client.emit('pong');
     }
-    handleGoalCreated(event) {
+    async handleGoalCreated(event) {
         this.broadcastToTeam(event.data.employeeId, 'goal:created', event);
+        const employee = await this.prisma.user.findUnique({
+            where: { id: event.data.employeeId },
+            select: { managerId: true }
+        });
+        if (employee?.managerId) {
+            this.broadcastToTeam(employee.managerId, 'goal:created', event);
+        }
     }
-    handleGoalSubmitted(event) {
+    async handleGoalSubmitted(event) {
         this.broadcastToTeam(event.data.employeeId, 'goal:submitted', event);
+        const goal = await this.prisma.goal.findUnique({
+            where: { id: event.aggregateId },
+            include: { employee: true }
+        });
+        if (goal?.employee?.managerId) {
+            this.broadcastToTeam(goal.employee.managerId, 'goal:submitted', event);
+        }
     }
-    handleGoalApproved(event) {
-        this.broadcastToTeam(event.data.approverId, 'goal:approved', event);
-        this.broadcastToTeam(event.actor.id, 'goal:approved', event);
+    async handleGoalApproved(event) {
+        const goal = await this.prisma.goal.findUnique({
+            where: { id: event.aggregateId },
+            select: { employeeId: true }
+        });
+        if (goal?.employeeId) {
+            this.broadcastToTeam(goal.employeeId, 'goal:approved', event);
+            this.broadcastToTeam(event.actor.id, 'goal:approved', event);
+        }
     }
-    handleGoalRejected(event) {
-        this.broadcastToTeam(event.actor.id, 'goal:rejected', event);
-        this.broadcastToTeam(event.data.approverId, 'goal:rejected', event);
+    async handleGoalRejected(event) {
+        const goal = await this.prisma.goal.findUnique({
+            where: { id: event.aggregateId },
+            select: { employeeId: true }
+        });
+        if (goal?.employeeId) {
+            this.broadcastToTeam(goal.employeeId, 'goal:rejected', event);
+            this.broadcastToTeam(event.actor.id, 'goal:rejected', event);
+        }
     }
     handleEscalationTriggered(event) {
         this.server.emit('escalation:triggered', event);
@@ -101,25 +132,25 @@ __decorate([
     (0, event_emitter_1.OnEvent)('goal.created'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], GoalsGateway.prototype, "handleGoalCreated", null);
 __decorate([
     (0, event_emitter_1.OnEvent)('goal.submitted'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], GoalsGateway.prototype, "handleGoalSubmitted", null);
 __decorate([
     (0, event_emitter_1.OnEvent)('goal.approved'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], GoalsGateway.prototype, "handleGoalApproved", null);
 __decorate([
     (0, event_emitter_1.OnEvent)('goal.rejected'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], GoalsGateway.prototype, "handleGoalRejected", null);
 __decorate([
     (0, event_emitter_1.OnEvent)('escalation.triggered'),
@@ -141,6 +172,7 @@ exports.GoalsGateway = GoalsGateway = GoalsGateway_1 = __decorate([
             credentials: true,
         },
         namespace: '/ws',
-    })
+    }),
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], GoalsGateway);
 //# sourceMappingURL=goals.gateway.js.map

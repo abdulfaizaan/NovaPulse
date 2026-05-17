@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateCheckinDto = void 0;
+exports.ReviewCheckinDto = exports.CreateCheckinDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const enums_1 = require("../../../common/enums");
@@ -53,4 +53,20 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateCheckinDto.prototype, "notes", void 0);
+class ReviewCheckinDto {
+    status;
+    comment;
+}
+exports.ReviewCheckinDto = ReviewCheckinDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ enum: enums_1.CheckInStatus }),
+    (0, class_validator_1.IsEnum)(enums_1.CheckInStatus),
+    __metadata("design:type", String)
+], ReviewCheckinDto.prototype, "status", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ReviewCheckinDto.prototype, "comment", void 0);
 //# sourceMappingURL=checkin.dto.js.map

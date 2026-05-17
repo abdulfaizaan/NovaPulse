@@ -28,3 +28,14 @@ export class CreateCheckinDto {
   @IsString()
   notes?: string;
 }
+
+export class ReviewCheckinDto {
+  @ApiProperty({ enum: CheckInStatus })
+  @IsEnum(CheckInStatus)
+  status: CheckInStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  comment?: string;
+}

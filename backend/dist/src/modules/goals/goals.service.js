@@ -21,6 +21,43 @@ let GoalsService = class GoalsService {
         this.prisma = prisma;
         this.eventsService = eventsService;
     }
+    async createShared(creatorId, data) {
+        const sharedGoal = await this.prisma.sharedGoal.create({
+            data: {
+                title: data.title,
+                description: data.description,
+                thrustArea: data.thrustArea,
+                unitOfMeasure: data.unitOfMeasure,
+                targetValue: data.targetValue,
+                creatorId,
+            },
+        });
+        for (const assignment of data.assignments) {
+            await this.prisma.goalAssignment.create({
+                data: {
+                    sharedGoalId: sharedGoal.id,
+                    employeeId: assignment.employeeId,
+                    weightage: assignment.weightage,
+                },
+            });
+            await this.prisma.goal.create({
+                data: {
+                    employeeId: assignment.employeeId,
+                    title: data.title,
+                    description: data.description,
+                    thrustArea: data.thrustArea,
+                    unitOfMeasure: data.unitOfMeasure,
+                    targetValue: data.targetValue,
+                    weightage: assignment.weightage,
+                    dueDate: new Date(data.dueDate),
+                    isShared: true,
+                    sharedGoalId: sharedGoal.id,
+                    status: enums_1.GoalStatus.DRAFT,
+                },
+            });
+        }
+        return sharedGoal;
+    }
     async create(employeeId, createGoalDto) {
         const goalsCount = await this.prisma.goal.count({
             where: { employeeId, status: { not: enums_1.GoalStatus.COMPLETED } }
@@ -97,6 +134,10 @@ let GoalsService = class GoalsService {
         const allGoals = await this.prisma.goal.findMany({
             where: { employeeId: userId, status: { in: [enums_1.GoalStatus.DRAFT, enums_1.GoalStatus.SUBMITTED, enums_1.GoalStatus.UNDER_REVIEW, enums_1.GoalStatus.APPROVED, enums_1.GoalStatus.LOCKED] } }
         });
+        const totalWeight = allGoals.reduce((sum, g) => sum + g.weightage, 0);
+        if (totalWeight !== 100) {
+            throw new common_1.BadRequestException(`Enterprise Guardrail: Total weightage of your active performance goals is ${totalWeight}%. It must be exactly 100% to submit.`);
+        }
         const updatedGoal = await this.prisma.goal.update({
             where: { id },
             data: { status: enums_1.GoalStatus.SUBMITTED },

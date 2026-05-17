@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateGoalDto, UpdateGoalDto } from './dto/goals.dto';
+import { CreateGoalDto, UpdateGoalDto, CreateSharedGoalDto } from './dto/goals.dto';
 import { GoalStatus, Role } from '../../common/enums';
 import { EventsService } from '../../events/events.service';
 
@@ -10,6 +10,47 @@ export class GoalsService {
     private prisma: PrismaService,
     private eventsService: EventsService,
   ) {}
+
+  async createShared(creatorId: string, data: CreateSharedGoalDto) {
+    const sharedGoal = await this.prisma.sharedGoal.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        thrustArea: data.thrustArea,
+        unitOfMeasure: data.unitOfMeasure,
+        targetValue: data.targetValue,
+        creatorId,
+      },
+    });
+
+    for (const assignment of data.assignments) {
+      await this.prisma.goalAssignment.create({
+        data: {
+          sharedGoalId: sharedGoal.id,
+          employeeId: assignment.employeeId,
+          weightage: assignment.weightage,
+        },
+      });
+
+      await this.prisma.goal.create({
+        data: {
+          employeeId: assignment.employeeId,
+          title: data.title,
+          description: data.description,
+          thrustArea: data.thrustArea,
+          unitOfMeasure: data.unitOfMeasure,
+          targetValue: data.targetValue,
+          weightage: assignment.weightage,
+          dueDate: new Date(data.dueDate),
+          isShared: true,
+          sharedGoalId: sharedGoal.id,
+          status: GoalStatus.DRAFT,
+        },
+      });
+    }
+
+    return sharedGoal;
+  }
 
   async create(employeeId: string, createGoalDto: CreateGoalDto) {
     // Validation: Max 8 goals
@@ -108,8 +149,10 @@ export class GoalsService {
       where: { employeeId: userId, status: { in: [GoalStatus.DRAFT, GoalStatus.SUBMITTED, GoalStatus.UNDER_REVIEW, GoalStatus.APPROVED, GoalStatus.LOCKED] } }
     });
     
-    // Need exact 100 weightage check before submitting the complete batch
-    // For individual goal submit, we might just transition state.
+    const totalWeight = allGoals.reduce((sum, g) => sum + g.weightage, 0);
+    if (totalWeight !== 100) {
+      throw new BadRequestException(`Enterprise Guardrail: Total weightage of your active performance goals is ${totalWeight}%. It must be exactly 100% to submit.`);
+    }
     
     const updatedGoal = await this.prisma.goal.update({
       where: { id },

@@ -90,10 +90,8 @@ export function GoalCard({ goal, onClick }: GoalCardProps) {
               </h3>
             </div>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="size-8 -mr-1 -mt-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/5">
-                  <MoreHorizontal className="size-4 text-immersive-muted" />
-                </Button>
+              <DropdownMenuTrigger className="size-8 -mr-1 -mt-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/5 flex items-center justify-center rounded-md text-immersive-muted outline-none cursor-pointer">
+                <MoreHorizontal className="size-4 text-immersive-muted" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="glass-effect border-white/10">
                 <DropdownMenuItem className="text-immersive-text focus:bg-white/10">Edit Goal</DropdownMenuItem>

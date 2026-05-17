@@ -36,10 +36,10 @@ export declare class AdminService {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
     getAuditLogs(): Promise<({
         user: {

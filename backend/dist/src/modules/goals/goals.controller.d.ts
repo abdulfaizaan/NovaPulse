@@ -1,8 +1,20 @@
 import { GoalsService } from './goals.service';
-import { CreateGoalDto, UpdateGoalDto } from './dto/goals.dto';
+import { CreateGoalDto, UpdateGoalDto, CreateSharedGoalDto } from './dto/goals.dto';
 export declare class GoalsController {
     private readonly goalsService;
     constructor(goalsService: GoalsService);
+    createShared(user: any, createSharedGoalDto: CreateSharedGoalDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string;
+        title: string;
+        thrustArea: string;
+        unitOfMeasure: string;
+        targetValue: number;
+        achievementValue: number;
+        creatorId: string;
+    }>;
     create(user: any, createGoalDto: CreateGoalDto): Promise<{
         employee: {
             id: string;
@@ -33,10 +45,10 @@ export declare class GoalsController {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
     findAll(user: any): Promise<({
         employee: {
@@ -68,10 +80,10 @@ export declare class GoalsController {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     })[]>;
     findOne(id: string, user: any): Promise<{
         employee: {
@@ -103,10 +115,10 @@ export declare class GoalsController {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
     update(id: string, updateGoalDto: UpdateGoalDto, user: any): Promise<{
         employee: {
@@ -138,10 +150,10 @@ export declare class GoalsController {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
     submit(id: string, user: any): Promise<{
         employee: {
@@ -173,10 +185,10 @@ export declare class GoalsController {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
     approve(id: string, user: any): Promise<{
         employee: {
@@ -208,9 +220,9 @@ export declare class GoalsController {
         status: string;
         employeeId: string;
         achievementValue: number;
+        sharedGoalId: string | null;
         progressScore: number;
         lockedAt: Date | null;
         version: number;
-        sharedGoalId: string | null;
     }>;
 }
