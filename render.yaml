@@ -1,3 +1,9 @@
+# 2. Managed PostgreSQL Database
+databases:
+  - name: novapulse-db
+    plan: free
+    postgresMajorVersion: 15
+
 services:
   # 1. NestJS Backend Service
   - type: web
@@ -20,8 +26,18 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
 
-# 2. Managed PostgreSQL Database
-databases:
-  - name: novapulse-db
+  # 3. Vite + React Frontend Static Site
+  - type: web
+    name: novapulse-frontend
+    env: static
+    rootDir: frontend/NovaPulse
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    publishDir: dist
     plan: free
-    postgresMajorVersion: 15
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://novapulse-backend.onrender.com
