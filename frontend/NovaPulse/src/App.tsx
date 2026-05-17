@@ -39,10 +39,9 @@ import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LandingPage } from "./components/landing/LandingPage";
 import { AuthPage } from "./components/auth/AuthPage";
-import { AuthCallback } from "./components/auth/AuthCallback";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
-type AppView = "landing" | "auth" | "app" | "auth-callback";
+type AppView = "landing" | "auth" | "app";
 
 import { useWebSocket } from "./hooks/useWebSocket";
 import { useGoalStore } from "./stores/goalStore";
@@ -293,7 +292,6 @@ function AppShell() {
 /* ================================================================== */
 export default function App() {
   const [view, setView] = React.useState<AppView>(() => {
-    if (window.location.pathname.includes("/auth/callback")) return "auth-callback";
     return sessionStorage.getItem("novapulse_auth") === "true" ? "app" : "landing";
   });
 
@@ -314,16 +312,6 @@ export default function App() {
     return (
       <AuthProvider>
         <AuthPageWrapper onComplete={() => setView("app")} />
-        <Toaster position="bottom-right" />
-      </AuthProvider>
-    );
-  }
-
-  /* ── Auth Callback ── */
-  if (view === "auth-callback") {
-    return (
-      <AuthProvider>
-        <AuthCallback onComplete={() => setView("app")} />
         <Toaster position="bottom-right" />
       </AuthProvider>
     );
