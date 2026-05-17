@@ -1,4 +1,9 @@
-# NovaPulse: Enterprise Architecture & Product Blueprint
+# 🚀 NovaPulse
+> **Enterprise Organizational Intelligence & AI-Assisted KPI Platform**
+
+NovaPulse is a next-generation Organizational Operating System (OOS) that replaces static spreadsheets with a living, real-time organizational alignment tree. It bridges the gap between high-level strategic thrust areas and daily tasks by integrating predictive AI, strict Role-Based Access Control (RBAC), and deep operational observability into a premium, glassmorphic UI.
+
+---
 
 ## 🏆 Hackathon Submission Deliverables
 
@@ -39,11 +44,9 @@ If you wish to run the production-ready build locally to evaluate the codebase:
 
 ---
 
-## 1. Executive Summary
+## 📖 About The Project
 
-NovaPulse is a next-generation Organizational Operating System (OOS) and Enterprise KPI tracking platform enhanced with AI-assisted workflows, real-time synchronization, and automated accountability. 
-
-In large enterprises, strategic goals often fail to cascade effectively down to individual contributors, resulting in misaligned work and reactive management. NovaPulse solves this by replacing static spreadsheets with a living, real-time organizational alignment tree. It bridges the gap between high-level strategic thrust areas and daily tasks by integrating predictive AI, strict Role-Based Access Control (RBAC), and deep operational observability into a premium, glassmorphic UI.
+In large enterprises, strategic goals often fail to cascade effectively down to individual contributors, resulting in misaligned work and reactive management. NovaPulse solves this by bringing accountability to the forefront.
 
 **Key Differentiators:**
 - **Real-Time Synchronization:** Bi-directional WebSockets ensuring instant updates across all users without manual refreshes.
@@ -90,7 +93,7 @@ The platform enforces strict Role-Based Access Control (RBAC) across three prima
 - **Responsibilities:** Manages global system health, oversees audit logs, configures performance cycles, and handles high-level escalations.
 - **Permissions:** Global read access, cycle management, system health dashboard access, global event stream monitoring, and administrative overrides (e.g., unlocking goals).
 
-## 5. Complete Workflow Breakdown
+## 🔄 Workflows & State Machines
 
 ### Goal Lifecycle State Machine
 ```mermaid
@@ -124,7 +127,7 @@ stateDiagram-v2
 - **Unlock Flows:** Once a goal is locked, any changes require an Admin or Manager override to revert the status, preserving data integrity.
 - **Escalations:** Background cron jobs evaluate system state. If a goal is pending approval for > 7 days or a check-in is overdue, the system generates an `Escalation` record, emits an `escalation.triggered` event, alerts the manager via webhook, and updates the live admin event stream.
 
-## 6. Feature Breakdown
+## ✨ Core Features
 
 ### Core Features
 - **Goal Lifecycle Management:** Comprehensive state-machine driven workflow (Draft → Submit → Approve → Lock).
@@ -145,7 +148,7 @@ stateDiagram-v2
 - **Immutable Audit Trails:** Deep tracking of microsecond-precision changes for compliance.
 - **Capacity Planning:** Workload heatmaps designed to preemptively identify resource burnout.
 
-## 7. System Architecture
+## 🏗️ System Architecture
 
 ### High-Level System Architecture
 ```mermaid
@@ -400,7 +403,7 @@ sequenceDiagram
 - **API Security:** Hardened with CORS whitelisting, Helmet security headers, rate limiting considerations, and explicit 401/403 HTTP status responses.
 - **Database Security:** Prisma ORM inherently prevents SQL injection via parameterized queries.
 
-## 12. DevOps & Deployment
+## ☁️ DevOps & Deployment
 
 - **Hosting Architecture:** Containerized Node.js backend paired with a statically deployed frontend (e.g., Vercel/S3) and a managed PostgreSQL instance.
 - **CI/CD Pipeline:** GitHub Actions automates linters, tests, and database migrations.
