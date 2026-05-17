@@ -15,6 +15,10 @@ const goals_module_1 = require("./modules/goals/goals.module");
 const checkins_module_1 = require("./modules/checkins/checkins.module");
 const admin_module_1 = require("./modules/admin/admin.module");
 const reports_module_1 = require("./modules/reports/reports.module");
+const events_module_1 = require("./events/events.module");
+const escalation_module_1 = require("./escalation/escalation.module");
+const webhooks_module_1 = require("./webhooks/webhooks.module");
+const goals_gateway_1 = require("./gateways/goals.gateway");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -28,7 +32,11 @@ exports.AppModule = AppModule = __decorate([
             checkins_module_1.CheckinsModule,
             admin_module_1.AdminModule,
             reports_module_1.ReportsModule,
+            events_module_1.EventsModule,
+            escalation_module_1.EscalationModule,
+            webhooks_module_1.WebhooksModule,
         ],
+        providers: [goals_gateway_1.GoalsGateway],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

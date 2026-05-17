@@ -1,8 +1,12 @@
 import { AdminService } from './admin.service';
 import { CreateCycleDto } from './dto/admin.dto';
+import { AdminEventStreamService } from './event-stream.service';
+import { PrismaService } from '../../prisma/prisma.service';
 export declare class AdminController {
     private readonly adminService;
-    constructor(adminService: AdminService);
+    private eventStreamService;
+    private prisma;
+    constructor(adminService: AdminService, eventStreamService: AdminEventStreamService, prisma: PrismaService);
     createCycle(createCycleDto: CreateCycleDto): Promise<{
         id: string;
         name: string;
@@ -38,6 +42,7 @@ export declare class AdminController {
         achievementValue: number;
         progressScore: number;
         lockedAt: Date | null;
+        version: number;
         sharedGoalId: string | null;
     }>;
     getAuditLogs(): Promise<({
@@ -55,4 +60,70 @@ export declare class AdminController {
         afterValue: string | null;
         userId: string | null;
     })[]>;
+    getSystemEvents(limit?: string, offset?: string): import("./event-stream.service").SystemEvent[];
+    getEventsByType(type: string, limit?: string): import("./event-stream.service").SystemEvent[];
+    getSystemHealth(): Promise<{
+        status: string;
+        timestamp: Date;
+        database: string;
+        websocket: string;
+        metrics: {
+            userCount: number;
+            goalCount: number;
+            openEscalations: number;
+            pendingApprovals: number;
+        };
+        services: {
+            database: {
+                status: string;
+                latency: string;
+            };
+            websocket: {
+                status: string;
+                connections: number;
+            };
+            escalation: {
+                status: string;
+                lastCheck: Date;
+            };
+            webhooks: {
+                status: string;
+                deliveryRate: string;
+            };
+        };
+        error?: undefined;
+    } | {
+        status: string;
+        timestamp: Date;
+        database: string;
+        error: any;
+        websocket?: undefined;
+        metrics?: undefined;
+        services?: undefined;
+    }>;
+    getOpenEscalations(): Promise<({
+        target: {
+            id: string;
+            fullName: string;
+            email: string;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        status: string;
+        targetId: string;
+        initiatorId: string | null;
+        reason: string;
+        level: number;
+    })[]>;
+    getDashboardSummary(): Promise<{
+        totalUsers: number;
+        totalGoals: number;
+        completedGoals: number;
+        completionRate: string;
+        openEscalations: number;
+        pendingApprovals: number;
+        recentEvents: import("./event-stream.service").SystemEvent[];
+    }>;
 }

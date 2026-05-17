@@ -38,6 +38,7 @@ export declare class AdminService {
         achievementValue: number;
         progressScore: number;
         lockedAt: Date | null;
+        version: number;
         sharedGoalId: string | null;
     }>;
     getAuditLogs(): Promise<({

@@ -16,7 +16,37 @@ export declare class AuthService {
             avatarUrl: any;
         };
     }>;
+    loginUser(user: any): Promise<{
+        accessToken: string;
+        user: {
+            id: any;
+            fullName: any;
+            email: any;
+            role: any;
+            avatarUrl: any;
+        };
+    }>;
     refreshToken(user: any): Promise<{
         accessToken: string;
+    }>;
+    validateOAuthUser(profile: {
+        email: string;
+        fullName: string;
+        googleId?: string;
+        microsoftId?: string;
+        avatarUrl?: string;
+    }): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        fullName: string;
+        email: string;
+        password: string;
+        role: string;
+        avatarUrl: string | null;
+        googleId: string | null;
+        microsoftId: string | null;
+        departmentId: string | null;
+        managerId: string | null;
     }>;
 }

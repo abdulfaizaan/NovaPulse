@@ -69,6 +69,9 @@ let AuthService = class AuthService {
         if (!user) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
+        return this.loginUser(user);
+    }
+    async loginUser(user) {
         const payload = {
             sub: user.id,
             email: user.email,
@@ -94,6 +97,41 @@ let AuthService = class AuthService {
         return {
             accessToken: this.jwtService.sign(payload)
         };
+    }
+    async validateOAuthUser(profile) {
+        const { email, fullName, googleId, microsoftId, avatarUrl } = profile;
+        let user = await this.prisma.user.findUnique({
+            where: { email },
+        });
+        if (user) {
+            const updateData = {};
+            if (googleId && !user.googleId)
+                updateData.googleId = googleId;
+            if (microsoftId && !user.microsoftId)
+                updateData.microsoftId = microsoftId;
+            if (avatarUrl && !user.avatarUrl)
+                updateData.avatarUrl = avatarUrl;
+            if (Object.keys(updateData).length > 0) {
+                user = await this.prisma.user.update({
+                    where: { id: user.id },
+                    data: updateData,
+                });
+            }
+        }
+        else {
+            user = await this.prisma.user.create({
+                data: {
+                    email,
+                    fullName,
+                    googleId,
+                    microsoftId,
+                    avatarUrl,
+                    password: await bcrypt.hash(Math.random().toString(36), 10),
+                    role: 'EMPLOYEE',
+                },
+            });
+        }
+        return user;
     }
 };
 exports.AuthService = AuthService;

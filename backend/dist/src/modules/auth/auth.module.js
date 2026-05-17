@@ -13,6 +13,10 @@ const passport_1 = require("@nestjs/passport");
 const auth_service_1 = require("./auth.service");
 const auth_controller_1 = require("./auth.controller");
 const jwt_strategy_1 = require("./strategies/jwt.strategy");
+const google_strategy_1 = require("./strategies/google.strategy");
+const microsoft_strategy_1 = require("./strategies/microsoft.strategy");
+const config_1 = require("@nestjs/config");
+const prisma_module_1 = require("../../prisma/prisma.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -20,13 +24,19 @@ exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
         imports: [
             passport_1.PassportModule,
-            jwt_1.JwtModule.register({
-                secret: process.env.JWT_SECRET || 'fallback_secret',
-                signOptions: { expiresIn: '1d' },
+            config_1.ConfigModule,
+            prisma_module_1.PrismaModule,
+            jwt_1.JwtModule.registerAsync({
+                imports: [config_1.ConfigModule],
+                useFactory: (configService) => ({
+                    secret: configService.get('JWT_SECRET') || 'fallback_secret_key_for_dev_only',
+                    signOptions: { expiresIn: '24h' },
+                }),
+                inject: [config_1.ConfigService],
             }),
         ],
         controllers: [auth_controller_1.AuthController],
-        providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy],
+        providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy, google_strategy_1.GoogleStrategy, microsoft_strategy_1.MicrosoftStrategy],
         exports: [auth_service_1.AuthService],
     })
 ], AuthModule);

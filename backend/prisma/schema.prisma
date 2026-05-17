@@ -26,6 +26,8 @@ model User {
   departmentId   String?
   managerId      String?
   avatarUrl      String?
+  googleId       String?    @unique
+  microsoftId    String?    @unique
   
   department     Department? @relation(fields: [departmentId], references: [id])
   manager        User?       @relation("ManagerHierarchy", fields: [managerId], references: [id])
@@ -74,6 +76,24 @@ model Goal {
   lockedAt         DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
+
+  version          Int        @default(1)
+  blockingGoals    GoalDependency[] @relation("BlockingGoals")
+  dependentOn      GoalDependency[] @relation("DependentGoals")
+}
+
+model GoalDependency {
+  id               String   @id @default(uuid())
+  blockingGoalId   String
+  dependentGoalId  String
+  dependencyType   String   @default("BLOCKS")
+
+  blockingGoal     Goal     @relation("BlockingGoals", fields: [blockingGoalId], references: [id])
+  dependentGoal    Goal     @relation("DependentGoals", fields: [dependentGoalId], references: [id])
+
+  createdAt        DateTime @default(now())
+  
+  @@unique([blockingGoalId, dependentGoalId])
 }
 
 model SharedGoal {

@@ -13,10 +13,13 @@ exports.GoalsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const enums_1 = require("../../common/enums");
+const events_service_1 = require("../../events/events.service");
 let GoalsService = class GoalsService {
     prisma;
-    constructor(prisma) {
+    eventsService;
+    constructor(prisma, eventsService) {
         this.prisma = prisma;
+        this.eventsService = eventsService;
     }
     async create(employeeId, createGoalDto) {
         const goalsCount = await this.prisma.goal.count({
@@ -25,17 +28,21 @@ let GoalsService = class GoalsService {
         if (goalsCount >= 8) {
             throw new common_1.BadRequestException('Maximum of 8 active goals allowed per employee');
         }
-        return this.prisma.goal.create({
+        const goal = await this.prisma.goal.create({
             data: {
                 ...createGoalDto,
                 employeeId,
                 dueDate: new Date(createGoalDto.dueDate),
-            }
+            },
+            include: { employee: true },
         });
+        const actor = await this.prisma.user.findUnique({ where: { id: employeeId } });
+        await this.eventsService.emitGoalCreated(goal.id, employeeId, goal, actor);
+        return goal;
     }
     async findAll(userId, role) {
         if (role === enums_1.Role.ADMIN) {
-            return this.prisma.goal.findMany();
+            return this.prisma.goal.findMany({ include: { employee: true } });
         }
         else if (role === enums_1.Role.MANAGER) {
             return this.prisma.goal.findMany({
@@ -49,7 +56,8 @@ let GoalsService = class GoalsService {
         }
         else {
             return this.prisma.goal.findMany({
-                where: { employeeId: userId }
+                where: { employeeId: userId },
+                include: { employee: true },
             });
         }
     }
@@ -78,7 +86,10 @@ let GoalsService = class GoalsService {
         }
         return this.prisma.goal.update({
             where: { id },
-            data: updateGoalDto
+            data: { ...updateGoalDto,
+                version: { increment: 1 }
+            },
+            include: { employee: true },
         });
     }
     async submit(id, userId) {
@@ -86,22 +97,45 @@ let GoalsService = class GoalsService {
         const allGoals = await this.prisma.goal.findMany({
             where: { employeeId: userId, status: { in: [enums_1.GoalStatus.DRAFT, enums_1.GoalStatus.SUBMITTED, enums_1.GoalStatus.UNDER_REVIEW, enums_1.GoalStatus.APPROVED, enums_1.GoalStatus.LOCKED] } }
         });
-        return this.prisma.goal.update({
+        const updatedGoal = await this.prisma.goal.update({
             where: { id },
-            data: { status: enums_1.GoalStatus.SUBMITTED }
+            data: { status: enums_1.GoalStatus.SUBMITTED },
+            include: { employee: true },
         });
+        const actor = await this.prisma.user.findUnique({ where: { id: userId } });
+        await this.eventsService.emitGoalSubmitted(id, userId, actor);
+        return updatedGoal;
     }
     async approve(id, managerId) {
         const goal = await this.findOne(id, managerId, enums_1.Role.MANAGER);
-        return this.prisma.goal.update({
+        if (goal.employeeId === managerId) {
+            throw new common_1.ForbiddenException('Enterprise Compliance: Users cannot approve their own goals.');
+        }
+        const updatedGoal = await this.prisma.goal.update({
             where: { id },
-            data: { status: enums_1.GoalStatus.APPROVED }
+            data: { status: enums_1.GoalStatus.APPROVED },
+            include: { employee: true },
         });
+        const actor = await this.prisma.user.findUnique({ where: { id: managerId } });
+        await this.eventsService.emitGoalApproved(id, managerId, actor);
+        return updatedGoal;
+    }
+    async reject(id, managerId, comment) {
+        const goal = await this.findOne(id, managerId, enums_1.Role.MANAGER);
+        const updatedGoal = await this.prisma.goal.update({
+            where: { id },
+            data: { status: enums_1.GoalStatus.REWORK_REQUESTED },
+            include: { employee: true },
+        });
+        const actor = await this.prisma.user.findUnique({ where: { id: managerId } });
+        await this.eventsService.emitGoalRejected(id, managerId, comment, actor);
+        return updatedGoal;
     }
 };
 exports.GoalsService = GoalsService;
 exports.GoalsService = GoalsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        events_service_1.EventsService])
 ], GoalsService);
 //# sourceMappingURL=goals.service.js.map

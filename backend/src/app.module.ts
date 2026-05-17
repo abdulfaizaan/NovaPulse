@@ -6,6 +6,10 @@ import { GoalsModule } from './modules/goals/goals.module';
 import { CheckinsModule } from './modules/checkins/checkins.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { EventsModule } from './events/events.module';
+import { EscalationModule } from './escalation/escalation.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
+import { GoalsGateway } from './gateways/goals.gateway';
 
 @Module({
   imports: [
@@ -16,6 +20,10 @@ import { ReportsModule } from './modules/reports/reports.module';
     CheckinsModule,
     AdminModule,
     ReportsModule,
+    EventsModule,
+    EscalationModule,
+    WebhooksModule,
   ],
+  providers: [GoalsGateway],
 })
 export class AppModule {}

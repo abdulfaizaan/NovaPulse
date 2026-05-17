@@ -10,13 +10,15 @@ exports.AdminModule = void 0;
 const common_1 = require("@nestjs/common");
 const admin_service_1 = require("./admin.service");
 const admin_controller_1 = require("./admin.controller");
+const event_stream_service_1 = require("./event-stream.service");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
 exports.AdminModule = AdminModule = __decorate([
     (0, common_1.Module)({
         controllers: [admin_controller_1.AdminController],
-        providers: [admin_service_1.AdminService],
+        providers: [admin_service_1.AdminService, event_stream_service_1.AdminEventStreamService],
+        exports: [event_stream_service_1.AdminEventStreamService],
     })
 ], AdminModule);
 //# sourceMappingURL=admin.module.js.map
