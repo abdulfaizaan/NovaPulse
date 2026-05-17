@@ -1,21 +1,37 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * AppSidebar — RBAC-aware sidebar navigation.
+ * 
+ * Shows only the navigation items the user's role permits.
+ * No manual role switching (removed). Admin impersonation is handled
+ * separately via the AuthContext.
  */
 
 import * as React from "react";
-import { 
-  LayoutDashboard, 
-  Target, 
-  CheckCircle2, 
-  Bell, 
-  User, 
-  BarChart3, 
-  Users, 
-  Settings, 
-  History, 
+import {
+  LayoutDashboard,
+  Target,
+  CheckCircle2,
+  Bell,
+  BarChart3,
+  Users,
+  Settings,
+  History,
   AlertCircle,
-  CalendarDays
+  CalendarDays,
+  Sparkles,
+  Search,
+  ShieldCheck,
+  LogOut,
+  UserCircle,
+  Zap,
+  Layers,
+  GitBranch,
+  MessageSquareHeart,
+  MessageSquare,
+  Activity,
+  FileText,
+  ShieldAlert,
+  LineChart,
 } from "lucide-react";
 import { UserRole } from "@/src/types";
 import { cn } from "@/lib/utils";
@@ -32,33 +48,48 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 interface SidebarItem {
   title: string;
   icon: React.ElementType;
   id: string;
+  badge?: string;
 }
 
 const EMPLOYEE_ITEMS: SidebarItem[] = [
   { title: "Dashboard", icon: LayoutDashboard, id: "dashboard" },
   { title: "My Goals", icon: Target, id: "goals" },
   { title: "Quarterly Check-ins", icon: CheckCircle2, id: "checkins" },
-  { title: "Notifications", icon: Bell, id: "notifications" },
+  { title: "Alignment Tree", icon: Layers, id: "alignment" },
+  { title: "Goal Graph", icon: GitBranch, id: "dependency-graph" },
+  { title: "Continuous Feedback", icon: MessageSquareHeart, id: "feedback" },
+  { title: "Analytics", icon: BarChart3, id: "analytics" },
+  { title: "AI Assistant", icon: Sparkles, id: "ai-assistant" },
 ];
 
 const MANAGER_ITEMS: SidebarItem[] = [
   { title: "Dashboard", icon: LayoutDashboard, id: "dashboard" },
+  { title: "My Goals", icon: Target, id: "goals" },
   { title: "Team Goals", icon: Users, id: "team-goals" },
-  { title: "Approvals", icon: CheckCircle2, id: "approvals" },
+  { title: "1-on-1 Workspace", icon: MessageSquare, id: "1on1" },
+  { title: "Capacity Planning", icon: Activity, id: "capacity" },
+  { title: "Approvals", icon: CheckCircle2, id: "approvals", badge: "3" },
+  { title: "AI Quarterly Review", icon: FileText, id: "ai-review" },
   { title: "Analytics", icon: BarChart3, id: "analytics" },
+  { title: "AI Assistant", icon: Sparkles, id: "ai-assistant" },
 ];
 
 const ADMIN_ITEMS: SidebarItem[] = [
   { title: "Dashboard", icon: LayoutDashboard, id: "dashboard" },
+  { title: "Users & Teams", icon: Users, id: "users" },
   { title: "Cycles", icon: CalendarDays, id: "cycles" },
+  { title: "Alignment Tree", icon: Layers, id: "alignment" },
+  { title: "Escalations", icon: ShieldAlert, id: "escalations" },
+  { title: "Advanced Analytics", icon: LineChart, id: "adv-analytics" },
   { title: "Audit Logs", icon: History, id: "audit" },
-  { title: "Escalations", icon: AlertCircle, id: "escalations" },
   { title: "Settings", icon: Settings, id: "settings" },
+  { title: "AI Assistant", icon: Sparkles, id: "ai-assistant" },
 ];
 
 interface AppSidebarProps {
@@ -66,106 +97,140 @@ interface AppSidebarProps {
   activeId: string;
   onNavigate: (id: string) => void;
   user: { name: string; avatar?: string; email: string };
-  onRoleSwitch: (role: UserRole) => void;
+  onLogout?: () => void;
+  impersonating?: { name: string; role: UserRole } | null;
+  onStopImpersonation?: () => void;
 }
 
-export function AppSidebar({ role, activeId, onNavigate, user, onRoleSwitch }: AppSidebarProps) {
-  const items = role === 'admin' ? ADMIN_ITEMS : role === 'manager' ? MANAGER_ITEMS : EMPLOYEE_ITEMS;
+export function AppSidebar({
+  role,
+  activeId,
+  onNavigate,
+  user,
+  onLogout,
+  impersonating,
+  onStopImpersonation,
+}: AppSidebarProps) {
+  const items =
+    role === "admin"
+      ? ADMIN_ITEMS
+      : role === "manager"
+      ? MANAGER_ITEMS
+      : EMPLOYEE_ITEMS;
+
+  const roleBadge =
+    role === "admin"
+      ? { label: "Admin", color: "bg-rose-500/10 text-rose-400 border-rose-500/20" }
+      : role === "manager"
+      ? { label: "Manager", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" }
+      : { label: "Employee", color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" };
 
   return (
-    <Sidebar variant="sidebar" collapsible="icon" className="glass-effect border-r-white/5 ring-0">
+    <Sidebar
+      variant="sidebar"
+      collapsible="icon"
+      className="glass-effect border-r-white/5 ring-0"
+    >
       <SidebarHeader className="h-16 flex items-center px-4">
         <div className="flex items-center gap-3">
-          <div className="size-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-500/20">N</div>
-          <span className="font-bold text-xl tracking-tight group-data-[collapsible=icon]:hidden text-gradient">NovaPulse</span>
+          <div className="size-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <Zap className="size-4 text-white" />
+          </div>
+          <span className="font-bold text-xl tracking-tight group-data-[collapsible=icon]:hidden text-gradient">
+            NovaPulse
+          </span>
         </div>
       </SidebarHeader>
+
       <SidebarContent id="sidebar-navigation">
+        {/* Impersonation banner */}
+        {impersonating && (
+          <div className="mx-3 mb-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 group-data-[collapsible=icon]:hidden">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="size-3.5 text-amber-400" />
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                  Impersonating
+                </span>
+              </div>
+              <button
+                onClick={onStopImpersonation}
+                className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline"
+              >
+                Stop
+              </button>
+            </div>
+            <p className="text-[10px] text-amber-400/70 mt-0.5 font-medium">
+              {impersonating.name} ({impersonating.role})
+            </p>
+          </div>
+        )}
+
         <SidebarGroup>
-          <SidebarGroupLabel className="text-immersive-muted font-black text-[10px] uppercase tracking-widest px-4 mb-2">Platform</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-immersive-muted font-black text-[10px] uppercase tracking-widest px-4 mb-2">
+            Platform
+          </SidebarGroupLabel>
           <SidebarMenu className="px-2">
             {items.map((item) => (
               <SidebarMenuItem key={item.id}>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   isActive={activeId === item.id}
                   onClick={() => onNavigate(item.id)}
                   tooltip={item.title}
                   className={cn(
                     "transition-all duration-300 h-10 px-4 rounded-lg mb-1",
-                    activeId === item.id 
-                      ? "bg-white/10 text-indigo-400 font-bold border border-white/10 shadow-sm shadow-indigo-500/10" 
+                    activeId === item.id
+                      ? "bg-white/10 text-indigo-400 font-bold border border-white/10 shadow-sm shadow-indigo-500/10"
                       : "text-immersive-muted hover:text-immersive-text hover:bg-white/5"
                   )}
                 >
-                  <item.icon className={cn("size-4.5", activeId === item.id && "text-indigo-400")} />
-                  <span className="text-sm">{item.title}</span>
+                  <item.icon
+                    className={cn(
+                      "size-4.5",
+                      activeId === item.id && "text-indigo-400"
+                    )}
+                  />
+                  <span className="text-sm flex-1">{item.title}</span>
+                  {item.badge && (
+                    <Badge className="h-5 px-1.5 text-[9px] bg-indigo-600 text-white border-0 font-bold ml-auto">
+                      {item.badge}
+                    </Badge>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
         </SidebarGroup>
-
-        <Separator className="my-4 mx-4 bg-white/5" />
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-immersive-muted font-black text-[10px] uppercase tracking-widest px-4 mb-2">Switch View</SidebarGroupLabel>
-          <SidebarMenu className="px-2">
-            <SidebarMenuItem>
-              <SidebarMenuButton 
-                onClick={() => onRoleSwitch('employee')} 
-                isActive={role === 'employee'} 
-                tooltip="Employee Mode"
-                className={cn(
-                  "transition-all duration-300 h-9 px-4 rounded-lg mb-1",
-                  role === 'employee' ? "text-indigo-400 font-bold" : "text-immersive-muted"
-                )}
-              >
-                <User className="size-4" />
-                <span className="text-xs">Employee Mode</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton 
-                onClick={() => onRoleSwitch('manager')} 
-                isActive={role === 'manager'} 
-                tooltip="Manager Mode"
-                className={cn(
-                  "transition-all duration-300 h-9 px-4 rounded-lg mb-1",
-                  role === 'manager' ? "text-indigo-400 font-bold" : "text-immersive-muted"
-                )}
-              >
-                <Users className="size-4" />
-                <span className="text-xs">Manager Mode</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton 
-                onClick={() => onRoleSwitch('admin')} 
-                isActive={role === 'admin'} 
-                tooltip="Admin Mode"
-                className={cn(
-                  "transition-all duration-300 h-9 px-4 rounded-lg mb-1",
-                  role === 'admin' ? "text-indigo-400 font-bold" : "text-immersive-muted"
-                )}
-              >
-                <Settings className="size-4" />
-                <span className="text-xs">Admin Mode</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t border-white/5 bg-white/5">
-        <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
+
+      <SidebarFooter className="p-3 border-t border-white/5 bg-white/[0.02] space-y-2">
+        {/* User info */}
+        <div className="flex items-center gap-3 px-1 group-data-[collapsible=icon]:justify-center">
           <Avatar className="size-8 border-2 border-indigo-500/50">
             <AvatarImage src={user.avatar} />
             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
-            <span className="text-xs font-bold truncate text-immersive-text">{user.name}</span>
-            <span className="text-[9px] text-indigo-400 truncate uppercase tracking-tighter font-black">{role}</span>
+            <span className="text-xs font-bold truncate text-immersive-text">
+              {user.name}
+            </span>
+            <Badge
+              className={`w-fit h-4 px-1.5 text-[8px] font-bold ${roleBadge.color} uppercase tracking-wider`}
+            >
+              {roleBadge.label}
+            </Badge>
           </div>
         </div>
+        {/* Logout button */}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:text-rose-400 hover:bg-rose-500/5 transition-colors group-data-[collapsible=icon]:justify-center"
+          >
+            <LogOut className="size-3.5" />
+            <span className="group-data-[collapsible=icon]:hidden">Sign Out</span>
+          </button>
+        )}
       </SidebarFooter>
     </Sidebar>
   );

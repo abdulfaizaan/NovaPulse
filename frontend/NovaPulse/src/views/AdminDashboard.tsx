@@ -5,6 +5,7 @@
 
 import { CalendarDays, History, AlertTriangle, ShieldCheck, Activity, Globe, Download, Send, Play, ChevronRight } from "lucide-react";
 import { StatWidget } from "@/src/components/dashboard/StatWidget";
+import { PulseScore } from "@/src/components/dashboard/PulseScore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,15 +18,27 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
+import { useGoalStore } from "@/src/stores/goalStore";
+import { toast } from "sonner";
 
-const auditLogs = [
-  { user: "Sarah Chen", action: "Approved Goal", field: "Status", before: "Under Review", after: "Approved", time: "2m ago" },
-  { user: "Oscar Wilde", action: "Changed Weight", field: "Weightage", before: "20%", after: "30%", time: "15m ago" },
-  { user: "NovaPulse System", action: "Created Cycle", field: "Cycle Status", before: "N/A", after: "Open", time: "1h ago" },
-  { user: "System Admin", action: "Unlocked Goal", field: "Locked Status", before: "True", after: "False", time: "3h ago" },
-];
+
 
 export function AdminDashboard() {
+  const { goals, auditLogs, notifications } = useGoalStore();
+  const totalGoals = goals.length;
+  const completedGoals = goals.filter((g) => g.progressStatus === 'completed').length;
+  const globalCompletion = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0;
+  const escalationCount = notifications.filter((n) => n.type === 'escalation' && !n.isRead).length;
+
+  const handleExportAudit = () => {
+    const csvRows = [
+      ['User', 'Action', 'Entity', 'Before', 'After', 'Timestamp'].join(','),
+      ...auditLogs.map((l) => [l.userName, l.action, l.entityType, l.beforeValue || '', l.afterValue || '', l.timestamp].join(','))
+    ];
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'audit_log.csv'; a.click();
+    toast.success('Audit log exported!');
+  };
   return (
     <div className="space-y-8 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -34,9 +47,9 @@ export function AdminDashboard() {
           <p className="text-immersive-muted font-medium">Global governance and monitoring for NovaPulse enterprise.</p>
         </div>
         <div className="flex items-center gap-3">
-           <Button variant="outline" className="border-white/10 glass-effect font-black text-[10px] uppercase tracking-widest px-6 h-11 text-immersive-text hover:bg-white/5">
+           <Button variant="outline" className="border-white/10 glass-effect font-black text-[10px] uppercase tracking-widest px-6 h-11 text-immersive-text hover:bg-white/5" onClick={handleExportAudit}>
              <Download className="mr-2 size-4" /> Global Audit CSV
-           </Button>
+            </Button>
            <Button className="bg-indigo-600 hover:bg-indigo-500 font-black text-[10px] uppercase tracking-widest px-8 h-11 shadow-xl shadow-indigo-600/20 text-white">
              <Send className="mr-2 size-4" /> System Broadcast
            </Button>
@@ -46,8 +59,8 @@ export function AdminDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatWidget 
           title="Global Completion" 
-          value="42%" 
-          description="Across 1,204 active goals" 
+          value={`${globalCompletion}%`} 
+          description={`Across ${totalGoals} active goals`} 
           icon={Globe}
           trend={{ value: 8, isPositive: true }}
           color="indigo"
@@ -61,8 +74,8 @@ export function AdminDashboard() {
         />
         <StatWidget 
           title="Pending Escalations" 
-          value="14" 
-          description="Requires HR intervention" 
+          value={String(escalationCount)} 
+          description={escalationCount > 0 ? "Requires attention" : "All clear"} 
           icon={AlertTriangle}
           color="rose"
         />
@@ -99,10 +112,10 @@ export function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {auditLogs.map((log, idx) => (
+                {auditLogs.slice(0, 10).map((log, idx) => (
                   <TableRow key={idx} className="hover:bg-white/5 transition-colors border-b border-white/5">
                     <TableCell className="py-4 pl-6">
-                      <span className="text-sm font-black text-immersive-text">{log.user}</span>
+                      <span className="text-sm font-black text-immersive-text">{log.userName}</span>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-white/10 text-immersive-muted shadow-none px-2 h-5 bg-white/5">
@@ -111,13 +124,13 @@ export function AdminDashboard() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 text-xs font-bold">
-                        <span className="text-immersive-muted line-through opacity-50">{log.before}</span>
+                        <span className="text-immersive-muted line-through opacity-50">{log.beforeValue}</span>
                         <ChevronRight className="size-3 text-immersive-muted opacity-30" />
-                        <span className="text-indigo-400 font-black">{log.after}</span>
+                        <span className="text-indigo-400 font-black">{log.afterValue}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right pr-6">
-                      <span className="text-[10px] font-black text-immersive-muted uppercase tracking-widest">{log.time}</span>
+                      <span className="text-[10px] font-black text-immersive-muted uppercase tracking-widest">{new Date(log.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -127,6 +140,19 @@ export function AdminDashboard() {
         </Card>
 
         <div className="space-y-6 flex flex-col">
+          {/* Org Pulse Score */}
+          <Card className="glass-effect border-white/5 shadow-2xl overflow-hidden">
+            <CardHeader className="border-b border-white/5 py-4 bg-white/5">
+              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-immersive-muted flex items-center gap-2">
+                <Activity className="size-4 text-indigo-400" />
+                Organization Pulse
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-6 flex justify-center">
+              <PulseScore score={76} previousScore={71} label="Org Health" size="md" />
+            </CardContent>
+          </Card>
+
           <Card className="border-white/5 glass-effect bg-indigo-600/10 text-white shadow-2xl shadow-indigo-600/20 overflow-hidden relative group border flex-1">
              <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform pointer-events-none">
                 <Play className="size-32" />

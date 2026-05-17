@@ -34,20 +34,23 @@ export interface GoalCardProps {
   onClick?: (goal: Goal) => void;
 }
 
-const statusConfig = {
-  'not-started': { label: 'Not Started', class: 'bg-slate-100 text-slate-600 border-slate-200' },
-  'on-track': { label: 'On Track', class: 'bg-blue-50 text-blue-600 border-blue-200' },
-  'completed': { label: 'Completed', class: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-  'delayed': { label: 'Delayed', class: 'bg-rose-50 text-rose-600 border-rose-200' },
-  'draft': { label: 'Draft', class: 'bg-amber-50 text-amber-600 border-amber-200' },
-  'under-review': { label: 'Under Review', class: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
-  'approved': { label: 'Approved', class: 'bg-teal-50 text-teal-600 border-teal-200' },
-  'rework': { label: 'Rework Required', class: 'bg-orange-50 text-orange-600 border-orange-200' },
+const statusConfig: Record<string, { label: string; class: string }> = {
+  'not-started': { label: 'Not Started', class: 'bg-slate-500/10 text-slate-400 border-slate-500/20' },
+  'on-track': { label: 'On Track', class: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+  'completed': { label: 'Completed', class: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+  'delayed': { label: 'Delayed', class: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
+  'draft': { label: 'Draft', class: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+  'submitted': { label: 'Submitted', class: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' },
+  'under-review': { label: 'Under Review', class: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' },
+  'approved': { label: 'Approved', class: 'bg-teal-500/10 text-teal-400 border-teal-500/20' },
+  'locked': { label: 'Locked', class: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+  'rework': { label: 'Rework', class: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
 };
 
 export function GoalCard({ goal, onClick }: GoalCardProps) {
   const status = statusConfig[goal.status] || statusConfig['not-started'];
-  const progress = (goal.achievement / goal.target) * 100;
+  const progressDisplay = statusConfig[goal.progressStatus] || statusConfig['not-started'];
+  const progress = goal.progressScore ?? ((goal.target > 0 ? (goal.achievement / goal.target) * 100 : 0));
 
   const getThrustIcon = (area: string) => {
     if (area.includes('Product')) return <Zap className="size-3" />;
@@ -119,7 +122,7 @@ export function GoalCard({ goal, onClick }: GoalCardProps) {
                 <p className="text-[9px] uppercase tracking-widest font-black text-immersive-muted">Achievement</p>
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-black text-immersive-text">{Math.round(progress)}%</span>
-                  <span className="text-[10px] text-immersive-muted font-bold tracking-tight">/ {goal.target} {goal.uom}</span>
+                  <span className="text-[10px] text-immersive-muted font-bold tracking-tight">/ {goal.target} {(goal as any).uomLabel || goal.uom}</span>
                 </div>
               </div>
               <div className="text-right space-y-0.5">

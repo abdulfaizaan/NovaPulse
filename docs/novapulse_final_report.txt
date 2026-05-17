@@ -1,0 +1,128 @@
+======================================================================
+                 NOVAPULSE - FINAL PROJECT REPORT
+======================================================================
+
+1. OVERVIEW
+----------------------------------------------------------------------
+NovaPulse is a full-stack, enterprise-grade, AI-powered Organizational 
+Intelligence Platform. It has evolved from a generic KPI tracker into a 
+modern, predictive enterprise system incorporating AI goal generation, 
+organizational alignment trees, predictive analytics, and strict 
+Role-Based Access Control (RBAC).
+
+Both servers are configured to run locally:
+- Frontend: http://localhost:5173
+- Backend: http://localhost:3000 (API prefix: /api)
+- Swagger API Docs: http://localhost:3000/api/docs
+
+
+2. FRONTEND ARCHITECTURE & FLOW
+----------------------------------------------------------------------
+Stack: React 19 + Vite 6 + Tailwind CSS 4 + shadcn/ui + Framer Motion.
+
+The application follows a strict three-stage flow gated by RBAC:
+
+[ LANDING PAGE ] -> [ AUTHENTICATION ] -> [ RBAC ROUTER GUARD ]
+                                                   |
+                                                   +--> (Role: Employee)
+                                                   |      |- Employee Dashboard
+                                                   |      |- My Goals
+                                                   |      |- Goal Dependency Graph
+                                                   |      |- Continuous Feedback
+                                                   |
+                                                   +--> (Role: Manager)
+                                                   |      |- Manager Dashboard
+                                                   |      |- Team Goals & Approvals
+                                                   |      |- 1-on-1 Workspace
+                                                   |      |- Capacity Planning
+                                                   |      |- AI Quarterly Review
+                                                   |
+                                                   +--> (Role: Admin)
+                                                          |- Admin Dashboard
+                                                          |- Organizational Alignment Tree
+                                                          |- Advanced Analytics Heatmaps
+                                                          |- Smart Escalation Engine
+                                                          |- Audit Logs & Cycle Mgmt
+
+Key Design Elements: Glassmorphism, animated background orbs, responsive 
+grids, immersive dark mode themes.
+
+
+3. BACKEND ARCHITECTURE
+----------------------------------------------------------------------
+Stack: NestJS 11 + Prisma ORM 5 + PostgreSQL/SQLite + JWT Auth.
+
+The backend is highly modular and built with NestJS best practices:
+
+- AuthModule: Handles login, registration, JWT generation, and password 
+  hashing via bcrypt.
+- GoalsModule: Full CRUD operations for individual and shared goals, 
+  including workflow states (Draft -> Review -> Approved -> Locked).
+- CheckInsModule: Tracks quarterly performance check-ins.
+- AdminModule: Manages global performance cycles, unlocks frozen goals, 
+  and exposes system-wide audit logs.
+- ReportsModule: Aggregates data for analytics (completion rates, 
+  department performance).
+
+Infrastructure Layers:
+- Guards: JwtAuthGuard, RolesGuard
+- Decorators: @CurrentUser(), @Roles()
+- Interceptors: AuditLogInterceptor (automatically tracks data changes)
+- Filters: GlobalExceptionFilter
+
+
+4. DATABASE ARCHITECTURE (SCHEMA)
+----------------------------------------------------------------------
+The database contains 14 distinct models defining complex enterprise 
+relationships.
+
+Core Entities & Relationships:
+- Department: Has many Users.
+- User: 
+    - Owns many Goals.
+    - Manages many Users (self-referential).
+    - Submits QuarterlyCheckins.
+    - Receives Notifications.
+- Goal:
+    - Has one Owner (User).
+    - Has many GoalUpdates (history tracking).
+    - Belongs to a Cycle.
+    - Can have many Comments.
+- SharedGoal & GoalAssignment: Maps multiple users to a shared KPI.
+- Cycle: Represents a fiscal quarter/performance period.
+- Approval: Tracks manager sign-offs on goals/check-ins.
+- AuditLog: Immutable ledger of system events.
+- Escalation: Tracks automated alerts and interventions.
+
+
+5. ENTERPRISE AI UPGRADE FEATURES
+----------------------------------------------------------------------
+- Organizational Alignment Tree: Interactive visual hierarchy (Company 
+  -> Department -> Team -> Individual).
+- Goal Dependency Graph: Network graph visualizing blockers and delays.
+- AI Goal Architect: Conversational AI to generate measurable KPIs.
+- AI Quarterly Review Generator: Auto-synthesizes performance data.
+- KPI Forecasting: Predictive modeling for end-of-quarter trajectory.
+- 1-on-1 Workspace: Shared meeting agendas, private notes, and actions.
+- Capacity Planning: Workload visualization to prevent burnout.
+- Smart Escalation Engine: Configurable, automated intervention triggers.
+- Continuous Feedback: 360-degree peer recognition and MVP badges.
+- Enterprise Search: Global command menu (Cmd/Ctrl + K).
+
+
+6. HOW TO RUN
+----------------------------------------------------------------------
+Frontend:
+  cd frontend/NovaPulse
+  npm install
+  npm run dev
+
+Backend:
+  cd backend
+  npm install
+  npx prisma db push
+  npm run start:dev
+
+(To reset demo authentication, run `sessionStorage.clear()` in the 
+browser console and refresh the page.)
+======================================================================

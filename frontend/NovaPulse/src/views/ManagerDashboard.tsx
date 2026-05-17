@@ -1,79 +1,70 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * ManagerDashboard — Connected to Zustand store with real team data
  */
-
-import { Users, CheckCircle2, AlertCircle, BarChart3, ChevronRight, UserMinus, UserPlus, Filter, Search } from "lucide-react";
+import { Users, CheckCircle2, AlertCircle, BarChart3, ChevronRight, UserMinus, UserPlus, Filter, Search, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { StatWidget } from "@/src/components/dashboard/StatWidget";
+import { AIInsightsCard } from "@/src/components/ai/AIInsightsCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
-const teamMembers = [
-  { name: "Alex Rivera", role: "Product Designer", progress: 68, status: "on-track", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" },
-  { name: "Jordan Smith", role: "Frontend Engineer", progress: 85, status: "ahead", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jordan" },
-  { name: "Mila Kunis", role: "UX Researcher", progress: 40, status: "delayed", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mila" },
-  { name: "Oscar Wilde", role: "Product Manager", progress: 92, status: "on-track", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Oscar" },
-];
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useGoalStore, TEAM_MEMBERS } from "@/src/stores/goalStore";
+import { useAuth } from "@/src/context/AuthContext";
+import { toast } from "sonner";
 
 export function ManagerDashboard() {
+  const { user } = useAuth();
+  const { goals, getPendingApprovals } = useGoalStore();
+
+  // Real team data
+  const teamGoals = goals.filter((g) => {
+    const member = TEAM_MEMBERS.find((m) => m.id === g.ownerId);
+    return member?.managerId === user?.id;
+  });
+  const pendingCount = getPendingApprovals(user?.id || '').length;
+  const delayedCount = teamGoals.filter((g) => g.progressStatus === 'delayed').length;
+  const teamProgress = teamGoals.length > 0 ? Math.round(teamGoals.reduce((s, g) => s + g.progressScore, 0) / teamGoals.length) : 0;
+  const completedCount = teamGoals.filter((g) => g.progressStatus === 'completed').length;
+
+  // Per-member stats
+  const memberStats = TEAM_MEMBERS.filter((m) => m.managerId === user?.id).map((member) => {
+    const memberGoals = teamGoals.filter((g) => g.ownerId === member.id);
+    const progress = memberGoals.length > 0 ? Math.round(memberGoals.reduce((s, g) => s + g.progressScore, 0) / memberGoals.length) : 0;
+    const status = memberGoals.some((g) => g.progressStatus === 'delayed') ? 'delayed' : progress >= 80 ? 'ahead' : 'on-track';
+    return { ...member, progress, status, goalCount: memberGoals.length };
+  });
+
+  const handleExport = () => {
+    const csvRows = [
+      ['Employee', 'Goal Title', 'Thrust Area', 'Target', 'Achievement', 'Score', 'Status', 'Weightage'].join(','),
+      ...teamGoals.map((g) => [g.ownerName, g.title, g.thrustArea, g.target, g.achievement, g.progressScore + '%', g.progressStatus, g.weightage + '%'].join(','))
+    ];
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'team_analytics.csv'; a.click();
+    toast.success("Team report downloaded!");
+  };
+
   return (
     <div className="space-y-8 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl font-black tracking-tight text-immersive-text">Team Performance</h1>
-          <p className="text-immersive-muted font-medium">Monitoring 8 direct reports and 34 active goals for Q2.</p>
+          <p className="text-immersive-muted font-medium">Monitoring {memberStats.length} direct reports and {teamGoals.length} active goals.</p>
         </div>
-        <div className="flex items-center gap-3">
-           <Button variant="outline" className="border-white/10 glass-effect font-bold text-immersive-text hover:bg-white/5 h-11 px-6">
-             <BarChart3 className="mr-2 size-4" /> Export Analytics
-           </Button>
-        </div>
+        <Button variant="outline" className="border-white/10 glass-effect font-bold text-immersive-text hover:bg-white/5 h-11 px-6" onClick={handleExport}>
+          <FileDown className="mr-2 size-4" /> Export Analytics
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatWidget 
-          title="Team Progress" 
-          value="72%" 
-          description="Avg objective completion" 
-          icon={BarChart3}
-          trend={{ value: 5, isPositive: true }}
-          color="indigo"
-        />
-        <StatWidget 
-          title="Pending Approvals" 
-          value="5" 
-          description="3 goal drafts, 2 updates" 
-          icon={CheckCircle2}
-          color="amber"
-        />
-        <StatWidget 
-          title="Delayed Goals" 
-          value="2" 
-          description="Requires immediate check-in" 
-          icon={AlertCircle}
-          color="rose"
-        />
-        <StatWidget 
-          title="Total Team" 
-          value="8" 
-          description="All members active" 
-          icon={Users}
-          color="blue"
-        />
+        <StatWidget title="Team Progress" value={`${teamProgress}%`} description="Avg objective completion" icon={BarChart3} trend={{ value: 5, isPositive: true }} color="indigo" />
+        <StatWidget title="Pending Approvals" value={String(pendingCount)} description={pendingCount > 0 ? "Needs your review" : "All clear"} icon={CheckCircle2} color="amber" />
+        <StatWidget title="Delayed Goals" value={String(delayedCount)} description={delayedCount > 0 ? "Requires check-in" : "All on track"} icon={AlertCircle} color="rose" />
+        <StatWidget title="Total Team" value={String(memberStats.length)} description={`${completedCount} goals completed`} icon={Users} color="blue" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -83,62 +74,47 @@ export function ManagerDashboard() {
               <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-immersive-muted">Employee Goal Status</CardTitle>
               <CardDescription className="text-xs font-medium text-immersive-muted opacity-70">Direct reports and their overall goal health</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-               <div className="relative hidden md:block">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-immersive-muted" />
-                  <Input placeholder="Search team..." className="pl-9 h-9 w-[180px] bg-white/5 border-white/10 text-immersive-text" />
-               </div>
-               <Button variant="outline" size="icon" className="size-9 border-white/10 hover:bg-white/5 text-immersive-text"><Filter className="size-4" /></Button>
-            </div>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader className="bg-white/5">
                 <TableRow className="border-b border-white/5 hover:bg-transparent">
-                  <TableHead className="text-[10px] font-black uppercase tracking-[0.2em] text-immersive-muted py-4 pl-6">Employee</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-[0.2em] text-immersive-muted">Progress</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-[0.2em] text-immersive-muted">Status</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-[0.2em] text-immersive-muted pr-6 font-black">Actions</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-immersive-muted py-4 pl-6">Employee</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-immersive-muted">Goals</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-immersive-muted">Progress</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-immersive-muted">Status</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-immersive-muted pr-6">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {teamMembers.map((member) => (
-                  <TableRow key={member.name} className="hover:bg-white/5 transition-colors border-b border-white/5">
+                {memberStats.map((member) => (
+                  <TableRow key={member.id} className="hover:bg-white/5 transition-colors border-b border-white/5">
                     <TableCell className="py-4 pl-6">
                       <div className="flex items-center gap-4">
                         <Avatar className="size-10 border-2 border-white/10 shadow-lg">
-                          <AvatarImage src={member.avatar} />
-                          <AvatarFallback className="bg-slate-800 text-white font-black">{member.name.charAt(0)}</AvatarFallback>
+                          <AvatarImage src={member.avatar} /><AvatarFallback className="bg-slate-800 text-white font-black">{member.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col">
                           <span className="text-sm font-black text-immersive-text">{member.name}</span>
-                          <span className="text-[10px] text-immersive-muted font-bold uppercase tracking-wider">{member.role}</span>
+                          <span className="text-[10px] text-immersive-muted font-bold uppercase tracking-wider">{member.department}</span>
                         </div>
                       </div>
                     </TableCell>
+                    <TableCell><span className="text-sm font-black text-immersive-text">{member.goalCount}</span></TableCell>
                     <TableCell className="w-[200px]">
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[10px] font-black text-immersive-muted uppercase tracking-tighter">
-                           <span>{member.progress}% Complete</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full bg-indigo-500" style={{ width: `${member.progress}%` }} />
-                        </div>
+                        <span className="text-[10px] font-black text-immersive-muted">{member.progress}% Complete</span>
+                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: `${member.progress}%` }} /></div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={cn(
-                        "rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider border-none shadow-lg",
-                        member.status === 'on-track' ? "bg-blue-500/10 text-blue-400" :
-                        member.status === 'ahead' ? "bg-emerald-500/10 text-emerald-400" :
-                        "bg-rose-500/10 text-rose-400"
-                      )}>
-                        {member.status}
-                      </Badge>
+                      <Badge className={cn("rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider border-none shadow-lg",
+                        member.status === 'on-track' ? "bg-blue-500/10 text-blue-400" : member.status === 'ahead' ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                      )}>{member.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <Button variant="ghost" size="sm" className="font-black text-[10px] uppercase tracking-widest text-indigo-400 hover:bg-transparent hover:text-indigo-300">
-                        View Details <ChevronRight className="ml-1 size-3" />
+                        View <ChevronRight className="ml-1 size-3" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -153,51 +129,42 @@ export function ManagerDashboard() {
             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-immersive-muted">Resource Outlook</CardTitle>
           </CardHeader>
           <CardContent className="pt-6 space-y-6 flex-1">
-             <div className="space-y-5">
-                <div className="flex items-center justify-between">
-                   <div className="flex items-center gap-4">
-                      <div className="size-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]">
-                         <UserPlus className="size-5" />
-                      </div>
-                      <div>
-                         <p className="text-xs font-black text-immersive-text">Capacity Available</p>
-                         <p className="text-[10px] text-immersive-muted font-bold uppercase tracking-tight">Jordan, Oscar</p>
-                      </div>
-                   </div>
-                   <Badge className="bg-emerald-500/10 text-emerald-400 font-black text-[9px] uppercase tracking-widest border-none">Low Risk</Badge>
+            {memberStats.filter((m) => m.status === 'ahead' || m.progress >= 80).length > 0 && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="size-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20"><UserPlus className="size-5" /></div>
+                  <div>
+                    <p className="text-xs font-black text-immersive-text">Capacity Available</p>
+                    <p className="text-[10px] text-immersive-muted font-bold">{memberStats.filter((m) => m.progress >= 80).map((m) => m.name.split(' ')[0]).join(', ')}</p>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                   <div className="flex items-center gap-4">
-                      <div className="size-10 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-400 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]">
-                         <UserMinus className="size-5" />
-                      </div>
-                      <div>
-                         <p className="text-xs font-black text-immersive-text">Limited Capacity</p>
-                         <p className="text-[10px] text-immersive-muted font-bold uppercase tracking-tight">Mila (3 active + Audit)</p>
-                      </div>
-                   </div>
-                   <Badge className="bg-rose-500/10 text-rose-400 font-black text-[9px] uppercase tracking-widest border-none">High Risk</Badge>
+                <Badge className="bg-emerald-500/10 text-emerald-400 font-black text-[9px] border-none">Low Risk</Badge>
+              </div>
+            )}
+            {memberStats.filter((m) => m.status === 'delayed').length > 0 && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="size-10 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-400 border border-rose-500/20"><UserMinus className="size-5" /></div>
+                  <div>
+                    <p className="text-xs font-black text-immersive-text">At Risk</p>
+                    <p className="text-[10px] text-immersive-muted font-bold">{memberStats.filter((m) => m.status === 'delayed').map((m) => m.name.split(' ')[0]).join(', ')}</p>
+                  </div>
                 </div>
-             </div>
-             
-             <Separator className="bg-white/5" />
-
-             <div className="space-y-4 glass-effect bg-indigo-500/10 rounded-2xl p-6 text-white relative overflow-hidden border border-indigo-500/20 shadow-2xl">
-                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                  <BarChart3 className="size-24" />
-                </div>
-                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Quarterly Recap</h4>
-                <div className="space-y-1">
-                   <p className="text-3xl font-black text-gradient">20/34</p>
-                   <p className="text-[10px] text-immersive-muted font-black uppercase tracking-widest">Goals items completed</p>
-                </div>
-                <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 font-black text-[10px] uppercase tracking-[0.15em] h-12 relative z-10 transition-transform active:scale-95 shadow-xl shadow-indigo-500/10 mt-2">
-                  Launch Team Sync
-                </Button>
-             </div>
+                <Badge className="bg-rose-500/10 text-rose-400 font-black text-[9px] border-none">High Risk</Badge>
+              </div>
+            )}
+            <Separator className="bg-white/5" />
+            <div className="glass-effect bg-indigo-500/10 rounded-2xl p-6 text-white relative overflow-hidden border border-indigo-500/20 shadow-2xl">
+              <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><BarChart3 className="size-24" /></div>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Quarterly Summary</h4>
+              <p className="text-3xl font-black text-gradient mt-1">{completedCount}/{teamGoals.length}</p>
+              <p className="text-[10px] text-immersive-muted font-black uppercase tracking-widest">Goals completed</p>
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      <AIInsightsCard variant="manager" />
     </div>
   );
 }
