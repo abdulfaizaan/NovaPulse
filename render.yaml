@@ -5,7 +5,7 @@ services:
     env: node
     rootDir: backend
     buildCommand: npm install --legacy-peer-deps && npx prisma generate && npm run build
-    startCommand: npx prisma db push && npm run start:prod
+    startCommand: npx prisma db push && node dist/src/main
     plan: free
     envVars:
       - key: DATABASE_URL
