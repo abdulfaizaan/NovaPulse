@@ -24,8 +24,8 @@ services:
       - key: MICROSOFT_CLIENT_SECRET
         sync: false
 
-  # 2. Managed PostgreSQL Database
-  - type: psql
-    name: novapulse-db
+# 2. Managed PostgreSQL Database
+databases:
+  - name: novapulse-db
     plan: free
     postgresMajorVersion: 15
